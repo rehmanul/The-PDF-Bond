@@ -438,6 +438,51 @@ def create_zip():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/download-project')
+def download_project():
+    """Download the entire project as a zip file"""
+    import zipfile
+    from io import BytesIO
+    from datetime import datetime
+    import os
+    
+    try:
+        # Create a BytesIO object to store the zip file
+        memory_file = BytesIO()
+        
+        # Define directories and files to exclude
+        exclude_dirs = ['.git', '__pycache__', 'venv', 'env']
+        exclude_files = ['.DS_Store']
+        
+        # Generate a timestamp for the filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Create a zip file in memory
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk('.'):
+                # Skip excluded directories
+                dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                
+                for file in files:
+                    if file not in exclude_files:
+                        file_path = os.path.join(root, file)
+                        # Add file to zip with relative path
+                        zipf.write(file_path, file_path)
+        
+        # Seek to the beginning of the BytesIO object
+        memory_file.seek(0)
+        
+        # Return the zip file as a response
+        return send_file(
+            memory_file,
+            as_attachment=True,
+            download_name=f'pdf_scraper_project_{timestamp}.zip',
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
 
