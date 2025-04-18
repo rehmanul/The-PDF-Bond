@@ -64,6 +64,16 @@ body {
     height: 40px;
     margin-right: 10px;
     border-radius: 8px;
+    object-fit: contain;
+}
+
+a.text-decoration-none {
+    color: inherit;
+}
+
+a.text-decoration-none:hover {
+    text-decoration: none;
+    color: var(--primary-color);
 }
 
 .sidebar-header h3 {

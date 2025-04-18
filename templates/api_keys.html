@@ -15,8 +15,10 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
-                    <img src="{{ url_for('static', filename='images/pdf-logo.png') }}" alt="PDF Scraper Logo" class="header-logo">
-                    <h3>R007 The PDF Bond</h3>
+                    <a href="/" class="text-decoration-none d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='images/pdf-logo.png') }}" alt="PDF Scraper Logo" class="header-logo">
+                        <h3>R007 The PDF Bond</h3>
+                    </a>
                 </div>
                 <button class="btn btn-link sidebar-toggle d-md-none" id="sidebarToggle">
                     <i class="bi bi-x-lg"></i>
@@ -51,15 +53,20 @@
                     <i class="bi bi-list"></i>
                 </button>
                 <div class="mobile-logo">
-                    <img src="{{ url_for('static', filename='images/pdf-logo.png') }}" alt="PDF Scraper Logo" class="mobile-header-logo">
-                    <h4>PDF Scraper</h4>
+                    <a href="/" class="text-decoration-none d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='images/pdf-logo.png') }}" alt="PDF Scraper Logo" class="mobile-header-logo">
+                        <h4>PDF Scraper</h4>
+                    </a>
                 </div>
                 <div></div> <!-- Empty div for flex alignment -->
             </div>
 
             <div class="content">
                 <div class="content-header">
-                    <h1><i class="bi bi-key"></i> API Keys Management</h1>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1><i class="bi bi-key"></i> API Keys Management</h1>
+                        <a href="/" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Back to Home</a>
+                    </div>
                 </div>
 
                 <!-- API Keys Section -->
