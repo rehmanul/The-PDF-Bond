@@ -390,3 +390,37 @@ def clear_data():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+@app.route('/generate-default-logo')
+def generate_default_logo():
+    """Generate a simple PDF logo if none exists"""
+    from PIL import Image, ImageDraw, ImageFont
+    import os
+    
+    logo_path = os.path.join('static', 'images', 'pdf-logo.png')
+    
+    # Check if logo already exists
+    if os.path.exists(logo_path):
+        return "Logo already exists"
+    
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(logo_path), exist_ok=True)
+    
+    # Create a 100x100 image with a blue background
+    img = Image.new('RGBA', (200, 200), (67, 97, 238, 255))
+    draw = ImageDraw.Draw(img)
+    
+    # Draw a white rounded rectangle for the PDF icon
+    draw.rounded_rectangle([(50, 40), (150, 160)], 10, fill=(255, 255, 255, 255))
+    
+    # Draw PDF text
+    draw.text((75, 80), "PDF", fill=(67, 97, 238, 255), font=None, align="center")
+    
+    # Add a folded corner
+    draw.polygon([(120, 40), (150, 70), (120, 70)], fill=(200, 200, 200, 255))
+    
+    # Save the image
+    img.save(logo_path)
+    
+    return "Default logo created at " + logo_path
