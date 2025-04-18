@@ -129,6 +129,30 @@
                             <button id="processDirectoryBtn" class="btn btn-primary">
                                 <i class="bi bi-play-fill"></i> Process Directory
                             </button>
+                            
+                            <hr class="my-3">
+                            
+                            <h5><i class="bi bi-file-zip"></i> Download as ZIP</h5>
+                            <p>Download all processed files in a single ZIP archive</p>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="includeText" value="text" checked>
+                                    <label class="form-check-label" for="includeText">Text Files</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="includeJson" value="json" checked>
+                                    <label class="form-check-label" for="includeJson">JSON Results</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="includeExcel" value="excel" checked>
+                                    <label class="form-check-label" for="includeExcel">Excel Tables</label>
+                                </div>
+                            </div>
+                            
+                            <button id="createZipBtn" class="btn btn-success">
+                                <i class="bi bi-download"></i> Download ZIP
+                            </button>
 
                             <div id="batchProgress" class="mt-4 d-none">
                                 <h5>Processing Files...</h5>

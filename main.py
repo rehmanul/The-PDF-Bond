@@ -388,6 +388,56 @@ def clear_data():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+@app.route('/create-zip', methods=['POST'])
+def create_zip():
+    import zipfile
+    from io import BytesIO
+    from datetime import datetime
+    
+    try:
+        # Get list of files to include in the zip
+        file_types = request.json.get('file_types', [])
+        
+        if not file_types:
+            return jsonify({"error": "No file types selected"}), 400
+            
+        # Create a BytesIO object to store the zip file
+        memory_file = BytesIO()
+        
+        # Create a zip file in memory
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Add files to the zip based on selected types
+            for filename in os.listdir(app.config['OUTPUT_FOLDER']):
+                include_file = False
+                
+                if 'text' in file_types and filename.endswith('_extracted.txt'):
+                    include_file = True
+                elif 'json' in file_types and filename.endswith('_results.json'):
+                    include_file = True
+                elif 'excel' in file_types and filename.endswith('.xlsx'):
+                    include_file = True
+                
+                if include_file:
+                    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+                    zf.write(file_path, arcname=filename)
+        
+        # Seek to the beginning of the BytesIO object
+        memory_file.seek(0)
+        
+        # Generate a timestamp for the filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Return the zip file as a response
+        return send_file(
+            memory_file,
+            as_attachment=True,
+            download_name=f'pdf_extraction_{timestamp}.zip',
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
 

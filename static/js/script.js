@@ -545,6 +545,67 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ZIP download functionality
+    const createZipBtn = document.getElementById('createZipBtn');
+    if (createZipBtn) {
+        createZipBtn.addEventListener('click', function() {
+            // Get selected file types
+            const fileTypes = [];
+            if (document.getElementById('includeText').checked) fileTypes.push('text');
+            if (document.getElementById('includeJson').checked) fileTypes.push('json');
+            if (document.getElementById('includeExcel').checked) fileTypes.push('excel');
+            
+            if (fileTypes.length === 0) {
+                alert('Please select at least one file type to include in the ZIP');
+                return;
+            }
+            
+            // Disable button and show loading state
+            createZipBtn.disabled = true;
+            createZipBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating ZIP...';
+            
+            // Create and download the ZIP file
+            fetch('/create-zip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ file_types: fileTypes })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to create ZIP file');
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Create a link to download the blob
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'pdf_extraction.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                // Reset button state
+                createZipBtn.disabled = false;
+                createZipBtn.innerHTML = '<i class="bi bi-download"></i> Download ZIP';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating ZIP: ' + error.message);
+                
+                // Reset button state
+                createZipBtn.disabled = false;
+                createZipBtn.innerHTML = '<i class="bi bi-download"></i> Download ZIP';
+            });
+        });
+    }
+
     // Initial page load
     refreshFiles();
 
