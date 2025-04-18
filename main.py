@@ -13,11 +13,29 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
+app.config['API_KEYS_FILE'] = 'api_keys.json'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
 # Ensure necessary directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+
+# Load saved API keys
+def load_api_keys():
+    if os.path.exists(app.config['API_KEYS_FILE']):
+        try:
+            with open(app.config['API_KEYS_FILE'], 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+# Save API key
+def save_api_key(key_name, key_value):
+    api_keys = load_api_keys()
+    api_keys[key_name] = key_value
+    with open(app.config['API_KEYS_FILE'], 'w') as f:
+        json.dump(api_keys, f)
 
 class PDFScraper:
     def __init__(self, pdf_path: str, use_perplexity=False, api_key=None):
@@ -181,6 +199,19 @@ def process_pdf(file_path: str, use_perplexity=False, perplexity_api_key=None) -
 def index():
     return render_template('index.html')
 
+@app.route('/api-keys', methods=['GET'])
+def get_api_keys():
+    return jsonify(load_api_keys())
+
+@app.route('/api-keys', methods=['POST'])
+def save_api_keys():
+    key_name = request.json.get('name')
+    key_value = request.json.get('value')
+    if key_name and key_value:
+        save_api_key(key_name, key_value)
+        return jsonify({"success": True, "message": f"{key_name} saved successfully"})
+    return jsonify({"error": "Missing key name or value"}), 400
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -196,6 +227,15 @@ def upload_file():
     # Check for Perplexity API usage
     use_perplexity = request.form.get('use_perplexity') == 'true'
     perplexity_api_key = request.form.get('perplexity_api_key', '')
+    
+    # If no API key provided but save_key is true, try to get from saved keys
+    if use_perplexity and not perplexity_api_key and request.form.get('use_saved_key') == 'true':
+        api_keys = load_api_keys()
+        perplexity_api_key = api_keys.get('perplexity', '')
+    
+    # If save_key is true, save the provided API key
+    if use_perplexity and perplexity_api_key and request.form.get('save_key') == 'true':
+        save_api_key('perplexity', perplexity_api_key)
     
     # Save the uploaded file
     filename = secure_filename(file.filename)
@@ -248,12 +288,21 @@ def process_directory_endpoint():
     if not os.path.exists(directory):
         return jsonify({"error": f"Directory '{directory}' not found"}), 404
     
+    # Check for Perplexity API usage
+    use_perplexity = request.json.get('use_perplexity', False)
+    perplexity_api_key = request.json.get('perplexity_api_key', '')
+    
+    # Try to get API key from saved keys if not provided
+    if use_perplexity and not perplexity_api_key:
+        api_keys = load_api_keys()
+        perplexity_api_key = api_keys.get('perplexity', '')
+    
     results = []
     for filename in os.listdir(directory):
         if filename.lower().endswith('.pdf'):
             file_path = os.path.join(directory, filename)
             try:
-                pdf_results = process_pdf(file_path)
+                pdf_results = process_pdf(file_path, use_perplexity, perplexity_api_key)
                 
                 # Save results
                 base_name = os.path.splitext(filename)[0]

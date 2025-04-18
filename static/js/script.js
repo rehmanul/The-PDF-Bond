@@ -139,6 +139,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData();
         formData.append('file', file);
+        
+        // Add Perplexity API info if enabled
+        if (usePerplexity && usePerplexity.checked) {
+            formData.append('use_perplexity', 'true');
+            
+            if (perplexityApiKey && perplexityApiKey.value) {
+                formData.append('perplexity_api_key', perplexityApiKey.value);
+            }
+            
+            if (saveApiKey && saveApiKey.checked) {
+                formData.append('save_key', 'true');
+            }
+            
+            if (useSavedKey && useSavedKey.checked) {
+                formData.append('use_saved_key', 'true');
+            }
+        }
 
         // Show upload progress
         uploadProgress.classList.remove('d-none');
@@ -471,6 +488,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // API key management
+    const loadSavedKeyBtn = document.getElementById('loadSavedKeyBtn');
+    const saveApiKey = document.getElementById('saveApiKey');
+    const useSavedKey = document.getElementById('useSavedKey');
+    const perplexityApiKey = document.getElementById('perplexityApiKey');
+    
     // Perplexity API toggle
     if (usePerplexity && perplexityApiSection) {
         usePerplexity.addEventListener('change', () => {
@@ -479,6 +502,121 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 perplexityApiSection.style.display = 'none';
             }
+        });
+    }
+    
+    // Load saved API key
+    if (loadSavedKeyBtn) {
+        loadSavedKeyBtn.addEventListener('click', function() {
+            fetch('/api-keys')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.perplexity) {
+                        perplexityApiKey.value = data.perplexity;
+                        useSavedKey.checked = true;
+                    } else {
+                        alert('No saved Perplexity API key found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading API key:', error);
+                    alert('Error loading API key');
+                });
+        });
+    }
+    
+    // Process directory with API key
+    if (processDirectoryBtn) {
+        processDirectoryBtn.addEventListener('click', function() {
+            // Show batch progress
+            batchProgress.classList.remove('d-none');
+            batchStatus.innerHTML = '<p>Processing started...</p>';
+            batchResults.classList.add('d-none');
+
+            // Disable the button
+            this.disabled = true;
+
+            // Set progress bar animation
+            const batchProgressBar = batchProgress.querySelector('.progress-bar');
+            batchProgressBar.style.width = '100%';
+            
+            // Get API key if Perplexity is enabled
+            let apiData = { directory: 'attached_assets' };
+            
+            if (usePerplexity && usePerplexity.checked) {
+                apiData.use_perplexity = true;
+                if (perplexityApiKey && perplexityApiKey.value) {
+                    apiData.perplexity_api_key = perplexityApiKey.value;
+                }
+            }
+
+            fetch('/process-directory', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Enable the button
+                processDirectoryBtn.disabled = false;
+
+                // Update status
+                batchStatus.innerHTML = '<p class="text-success"><i class="bi bi-check-circle"></i> Processing completed</p>';
+
+                // Show results
+                batchResults.classList.remove('d-none');
+
+                // Clear previous results
+                batchResultsBody.innerHTML = '';
+
+                // Add results to table
+                data.results.forEach(result => {
+                    const row = document.createElement('tr');
+
+                    if (result.success) {
+                        row.innerHTML = `
+                            <td>${result.filename}</td>
+                            <td><span class="badge bg-success">Success</span></td>
+                            <td>${result.page_count}</td>
+                            <td>${result.table_count}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/view-results/${result.results_json}" class="btn btn-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="/download/${result.text_file}"><i class="bi bi-file-text"></i> Download Text</a></li>
+                                        ${result.excel_file ? `<li><a class="dropdown-item" href="/download/${result.excel_file}"><i class="bi bi-file-excel"></i> Download Tables</a></li>` : ''}
+                                        <li><a class="dropdown-item" href="/download/${result.results_json}"><i class="bi bi-file-code"></i> Download JSON</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${result.filename}</td>
+                            <td><span class="badge bg-danger">Failed</span></td>
+                            <td colspan="2">${result.error}</td>
+                            <td>-</td>
+                        `;
+                    }
+
+                    batchResultsBody.appendChild(row);
+                });
+
+                // Refresh files list
+                refreshFiles();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                processDirectoryBtn.disabled = false;
+                batchStatus.innerHTML = `<p class="text-danger"><i class="bi bi-x-circle"></i> Error: ${error.message || 'Unknown error'}</p>`;
+            });
         });
     }
 });
