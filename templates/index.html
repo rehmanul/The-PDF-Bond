@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -90,6 +89,20 @@
                             <div class="card-body">
                                 <div id="processingDetails"></div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="usePerplexity" name="use_perplexity">
+                            <label class="form-check-label" for="usePerplexity">Use Perplexity API for enhanced analysis</label>
+                        </div>
+
+                        <div id="perplexityApiSection" class="mt-2" style="display: none;">
+                            <div class="input-group">
+                                <span class="input-group-text">API Key</span>
+                                <input type="password" class="form-control" id="perplexityApiKey" name="perplexity_api_key" placeholder="Enter your Perplexity API key">
+                            </div>
+                            <small class="text-muted">Your API key is used only for this request and not stored on the server.</small>
                         </div>
                     </div>
                 </div>
@@ -222,7 +235,7 @@
                                 <input class="form-check-input" type="checkbox" id="darkModeToggle">
                                 <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
                             </div>
-                            
+
                             <h5 class="mt-4">Extraction Options</h5>
                             <div class="mb-3 form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="extractTextToggle" checked>
@@ -236,7 +249,7 @@
                                 <input class="form-check-input" type="checkbox" id="extractMetadataToggle" checked>
                                 <label class="form-check-label" for="extractMetadataToggle">Extract Metadata</label>
                             </div>
-                            
+
                             <h5 class="mt-4">About</h5>
                             <p>PDF Scraper v1.0</p>
                             <p>A powerful tool for extracting content from PDF files.</p>

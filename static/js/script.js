@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const sidebar = document.getElementById('sidebar');
@@ -19,48 +18,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const batchResults = document.getElementById('batchResults');
     const batchResultsBody = document.getElementById('batchResultsBody');
     const refreshFilesBtn = document.getElementById('refreshFilesBtn');
-    const clearDataBtn = document.getElementById('clearDataBtn');
+    const clearDataBtn = document.getElementById('clearDataModal');
     const confirmClearBtn = document.getElementById('confirmClearBtn');
     const uploadsTableBody = document.getElementById('uploadsTableBody');
     const outputsTableBody = document.getElementById('outputsTableBody');
-    
+    const usePerplexity = document.getElementById('usePerplexity'); // Added
+    const perplexityApiSection = document.getElementById('perplexityApiSection'); // Added
+
+
     // Initialize Bootstrap components
     const clearDataModal = new bootstrap.Modal(document.getElementById('clearDataModal'));
-    
+
     // Mobile sidebar toggle
     if (mobileMenuToggle) {
         mobileMenuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
     }
-    
+
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function() {
             sidebar.classList.remove('active');
         });
     }
-    
+
     // Navigation
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
             // Update active link
             navLinks.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Show corresponding section
             const sectionId = this.getAttribute('data-section');
             sections.forEach(section => {
                 section.classList.remove('active');
             });
             document.getElementById(`${sectionId}-section`).classList.add('active');
-            
+
             // Close mobile sidebar
             if (window.innerWidth < 768) {
                 sidebar.classList.remove('active');
             }
         });
     });
-    
+
     // Dark mode toggle
     if (darkModeToggle) {
         // Check for saved dark mode preference
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('dark-mode');
             darkModeToggle.checked = true;
         }
-        
+
         darkModeToggle.addEventListener('change', function() {
             if (this.checked) {
                 document.body.classList.add('dark-mode');
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // File Upload Functionality
     if (fileInput) {
         fileInput.addEventListener('change', function() {
@@ -88,65 +90,65 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Drag and drop functionality
     if (dropArea) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
         });
-        
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         ['dragenter', 'dragover'].forEach(eventName => {
             dropArea.addEventListener(eventName, highlight, false);
         });
-        
+
         ['dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, unhighlight, false);
         });
-        
+
         function highlight() {
             dropArea.classList.add('dragover');
         }
-        
+
         function unhighlight() {
             dropArea.classList.remove('dragover');
         }
-        
+
         dropArea.addEventListener('drop', handleDrop, false);
-        
+
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
-            
+
             if (files.length > 0) {
                 uploadFile(files[0]);
             }
         }
     }
-    
+
     // Upload file function
     function uploadFile(file) {
         if (!file.name.toLowerCase().endsWith('.pdf')) {
             alert('Please select a PDF file.');
             return;
         }
-        
+
         const formData = new FormData();
         formData.append('file', file);
-        
+
         // Show upload progress
         uploadProgress.classList.remove('d-none');
         progressBar.style.width = '0%';
-        
+
         // Hide processing status while uploading
         processingStatus.classList.add('d-none');
-        
+
         const xhr = new XMLHttpRequest();
-        
+
         xhr.upload.addEventListener('progress', function(e) {
             if (e.lengthComputable) {
                 const percentComplete = Math.round((e.loaded / e.total) * 100);
@@ -154,14 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressBar.textContent = percentComplete + '%';
             }
         });
-        
+
         xhr.addEventListener('load', function() {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
-                
+
                 // Show processing status
                 processingStatus.classList.remove('d-none');
-                
+
                 let detailsHtml = `
                     <div class="alert alert-success">
                         <h5><i class="bi bi-check-circle"></i> File Processed Successfully</h5>
@@ -177,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="bi bi-download"></i> Download Text
                         </a>
                 `;
-                
+
                 if (response.excel_file) {
                     detailsHtml += `
                         <a href="/download/${response.excel_file}" class="btn btn-success">
@@ -185,19 +187,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     `;
                 }
-                
+
                 detailsHtml += `
                         <a href="/download/${response.results_json}" class="btn btn-info">
                             <i class="bi bi-download"></i> Download JSON
                         </a>
                     </div>
                 `;
-                
+
                 processingDetails.innerHTML = detailsHtml;
-                
+
                 // Refresh the files list
                 refreshFiles();
-                
+
             } else {
                 let errorMessage = 'An error occurred during processing.';
                 try {
@@ -206,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         errorMessage = response.error;
                     }
                 } catch (e) {}
-                
+
                 processingStatus.classList.remove('d-none');
                 processingDetails.innerHTML = `
                     <div class="alert alert-danger">
@@ -215,13 +217,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             }
-            
+
             // Hide upload progress
             setTimeout(() => {
                 uploadProgress.classList.add('d-none');
             }, 1000);
         });
-        
+
         xhr.addEventListener('error', function() {
             processingStatus.classList.remove('d-none');
             processingDetails.innerHTML = `
@@ -232,11 +234,11 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             uploadProgress.classList.add('d-none');
         });
-        
+
         xhr.open('POST', '/upload');
         xhr.send(formData);
     }
-    
+
     // Process directory
     if (processDirectoryBtn) {
         processDirectoryBtn.addEventListener('click', function() {
@@ -244,14 +246,14 @@ document.addEventListener('DOMContentLoaded', function() {
             batchProgress.classList.remove('d-none');
             batchStatus.innerHTML = '<p>Processing started...</p>';
             batchResults.classList.add('d-none');
-            
+
             // Disable the button
             this.disabled = true;
-            
+
             // Set progress bar animation
             const batchProgressBar = batchProgress.querySelector('.progress-bar');
             batchProgressBar.style.width = '100%';
-            
+
             fetch('/process-directory', {
                 method: 'POST',
                 headers: {
@@ -263,20 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 // Enable the button
                 processDirectoryBtn.disabled = false;
-                
+
                 // Update status
                 batchStatus.innerHTML = '<p class="text-success"><i class="bi bi-check-circle"></i> Processing completed</p>';
-                
+
                 // Show results
                 batchResults.classList.remove('d-none');
-                
+
                 // Clear previous results
                 batchResultsBody.innerHTML = '';
-                
+
                 // Add results to table
                 data.results.forEach(result => {
                     const row = document.createElement('tr');
-                    
+
                     if (result.success) {
                         row.innerHTML = `
                             <td>${result.filename}</td>
@@ -307,10 +309,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>-</td>
                         `;
                     }
-                    
+
                     batchResultsBody.appendChild(row);
                 });
-                
+
                 // Refresh files list
                 refreshFiles();
             })
@@ -321,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     // File listing
     function refreshFiles() {
         fetch('/list-files')
@@ -344,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         `;
                         uploadsTableBody.appendChild(row);
                     });
-                    
+
                     // Add event listeners to process buttons
                     document.querySelectorAll('.file-process-btn').forEach(btn => {
                         btn.addEventListener('click', function() {
@@ -355,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 }
-                
+
                 // Update outputs table
                 if (data.outputs.length === 0) {
                     outputsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">No output files</td></tr>';
@@ -363,10 +365,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     outputsTableBody.innerHTML = '';
                     data.outputs.forEach(filename => {
                         const row = document.createElement('tr');
-                        
+
                         let fileType = 'Unknown';
                         let icon = 'file';
-                        
+
                         if (filename.endsWith('.txt')) {
                             fileType = 'Text';
                             icon = 'file-text';
@@ -377,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             fileType = 'JSON';
                             icon = 'file-code';
                         }
-                        
+
                         let viewButton = '';
                         if (filename.endsWith('_results.json')) {
                             viewButton = `
@@ -386,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </a>
                             `;
                         }
-                        
+
                         row.innerHTML = `
                             <td>${filename}</td>
                             <td><i class="bi bi-${icon}"></i> ${fileType}</td>
@@ -407,21 +409,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 outputsTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error loading files</td></tr>';
             });
     }
-    
+
     // Refresh files button
     if (refreshFilesBtn) {
         refreshFilesBtn.addEventListener('click', function() {
             refreshFiles();
         });
     }
-    
+
     // Clear data functionality
     if (clearDataBtn) {
         clearDataBtn.addEventListener('click', function() {
             clearDataModal.show();
         });
     }
-    
+
     if (confirmClearBtn) {
         confirmClearBtn.addEventListener('click', function() {
             fetch('/clear-data', {
@@ -444,7 +446,39 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     // Initial page load
     refreshFiles();
+
+    // Setup dark mode
+    if (darkModeToggle) {
+        // Check for saved theme preference or use preferred color scheme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.setAttribute('data-bs-theme', 'dark');
+            darkModeToggle.checked = true;
+        }
+
+        // Dark mode toggle handler
+        darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+                document.body.setAttribute('data-bs-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.setAttribute('data-bs-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
+
+    // Perplexity API toggle
+    if (usePerplexity && perplexityApiSection) {
+        usePerplexity.addEventListener('change', () => {
+            if (usePerplexity.checked) {
+                perplexityApiSection.style.display = 'block';
+            } else {
+                perplexityApiSection.style.display = 'none';
+            }
+        });
+    }
 });
