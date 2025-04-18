@@ -1,0 +1,46 @@
+modules = ["nodejs-20", "web"]
+run = "Start "
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm run start"]
+build = ["sh", "-c", "npm run build"]
+
+[[deployment.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[workflows]
+runButton = "Dev (Full Stack)"
+
+[[workflows.workflow]]
+name = "Start"
+author = 41660482
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd client && npm run dev"
+
+[[workflows.workflow]]
+name = "Dev (Full Stack)"
+author = 41660482
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd client && npm run dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 5173
+externalPort = 80

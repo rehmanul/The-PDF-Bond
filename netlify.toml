@@ -1,0 +1,93 @@
+[build]
+  command = "npm run build"
+  publish = "dist/public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Check for broken links
+[[plugins]]
+  package = "netlify-plugin-checklinks"
+  
+  [plugins.inputs]
+  entryPoints = ["*.html"]
+  recursive = true
+  pretty = true
+  skipPatterns = []
+  todoPatterns = []
+  checkExternal = false
+  followSourceMaps = false
+
+# Inline critical CSS for faster rendering
+[[plugins]]
+  package = "netlify-plugin-inline-critical-css"
+
+  [plugins.inputs]
+  minify = true
+  basedir = "./dist/public"
+
+# Submit sitemap to search engines
+[[plugins]]
+  package = "netlify-plugin-submit-sitemap"
+
+  [plugins.inputs]
+    baseUrl = "https://okkyno.com"
+    sitemapPath = "/sitemap.xml"
+    providers = [
+      "google",
+      "bing",
+      "yandex"
+    ]
+
+# Optimize images for better performance
+[[plugins]]
+  package = "netlify-plugin-image-optim"
+
+# Prefetch initial links to improve perceived load time
+[[plugins]]
+  package = "netlify-plugin-inline-source"
+
+  [plugins.inputs]
+    attribute = "inline"
+
+# Cache headers for better performance
+[[plugins]]
+  package = "netlify-plugin-cache-headers"
+
+  [plugins.inputs]
+    "/*.(css|js|json)" = """
+      Cache-Control: public, max-age=31536000, immutable
+    """
+    "/*.(jpg|jpeg|png|gif|webp|svg|ico)" = """
+      Cache-Control: public, max-age=31536000, immutable
+    """
+    "/*.(woff|woff2|ttf|otf|eot)" = """
+      Cache-Control: public, max-age=31536000, immutable
+    """
+    "/" = """
+      Cache-Control: public, max-age=0, must-revalidate
+    """
+
+# Check for accessibility issues
+[[plugins]]
+  package = "netlify-plugin-a11y"
+
+  [plugins.inputs]
+    checkPaths = ['/']
+    failWithoutPrefix = false
