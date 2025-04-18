@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Upload file function
     function uploadFile(file) {
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
+        if (!file || !file.name || !file.name.toLowerCase().endsWith('.pdf')) {
             alert('Please select a PDF file.');
             return;
         }
@@ -264,6 +264,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         xhr.addEventListener('error', function() {
+            const processingStatus = document.getElementById('processingStatus');
+            const processingDetails = document.getElementById('processingDetails');
+            const uploadProgress = document.getElementById('uploadProgress');
+            
             if (processingStatus) {
                 processingStatus.classList.remove('d-none');
             }
