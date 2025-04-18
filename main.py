@@ -136,7 +136,7 @@ def analyze_text_with_perplexity(text, api_key):
         api_url = "https://api.perplexity.ai/chat/completions"
         
         payload = {
-            "model": "llama-3-sonar-large-32k-online",
+            "model": "sonar-medium-online",
             "messages": [
                 {
                     "role": "system",
@@ -418,7 +418,13 @@ def clear_data():
         return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='PDF Scraper Server')
+    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
+    args = parser.parse_args()
+    
+    app.run(host='0.0.0.0', port=args.port, debug=True)
 
 
 @app.route('/generate-default-logo')
