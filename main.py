@@ -4,7 +4,6 @@ import PyPDF2
 import pdfplumber
 import pandas as pd
 import requests
-import datetime
 from typing import Dict, List, Any
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 import json
@@ -35,22 +34,8 @@ def load_api_keys():
 def save_api_key(key_name, key_value):
     api_keys = load_api_keys()
     api_keys[key_name] = key_value
-    # Add timestamp for when keys were last updated
-    api_keys['updated_at'] = datetime.datetime.now().isoformat()
     with open(app.config['API_KEYS_FILE'], 'w') as f:
         json.dump(api_keys, f)
-    return True
-
-# Delete API key
-def delete_api_key(key_name):
-    api_keys = load_api_keys()
-    if key_name in api_keys:
-        del api_keys[key_name]
-        api_keys['updated_at'] = datetime.datetime.now().isoformat()
-        with open(app.config['API_KEYS_FILE'], 'w') as f:
-            json.dump(api_keys, f)
-        return True
-    return False
 
 class PDFScraper:
     def __init__(self, pdf_path: str, use_perplexity=False, api_key=None):
@@ -136,7 +121,7 @@ def analyze_text_with_perplexity(text, api_key):
         api_url = "https://api.perplexity.ai/chat/completions"
         
         payload = {
-            "model": "sonar-medium-online",
+            "model": "llama-3-sonar-large-32k-online",
             "messages": [
                 {
                     "role": "system",
@@ -214,10 +199,6 @@ def process_pdf(file_path: str, use_perplexity=False, perplexity_api_key=None) -
 def index():
     return render_template('index.html')
 
-@app.route('/manage-api-keys')
-def manage_api_keys():
-    return render_template('api_keys.html')
-
 @app.route('/api-keys', methods=['GET'])
 def get_api_keys():
     return jsonify(load_api_keys())
@@ -227,19 +208,9 @@ def save_api_keys():
     key_name = request.json.get('name')
     key_value = request.json.get('value')
     if key_name and key_value:
-        success = save_api_key(key_name, key_value)
-        if success:
-            return jsonify({"success": True, "message": f"{key_name} saved successfully"})
-        else:
-            return jsonify({"success": False, "error": "Failed to save API key"}), 500
-    return jsonify({"success": False, "error": "Missing key name or value"}), 400
-
-@app.route('/api-keys/<key_name>', methods=['DELETE'])
-def delete_api_key_route(key_name):
-    success = delete_api_key(key_name)
-    if success:
-        return jsonify({"success": True, "message": f"{key_name} deleted successfully"})
-    return jsonify({"success": False, "error": f"API key {key_name} not found"}), 404
+        save_api_key(key_name, key_value)
+        return jsonify({"success": True, "message": f"{key_name} saved successfully"})
+    return jsonify({"error": "Missing key name or value"}), 400
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -349,18 +320,12 @@ def process_directory_endpoint():
                 # Save tables to Excel if any found
                 excel_path = None
                 if pdf_results['tables']:
-                    try:
-                        excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
-                        with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
-                            for i, table_data in enumerate(pdf_results['tables']):
-                                df = pd.DataFrame(table_data['data'], columns=table_data['columns'])
-                                sheet_name = f'Table_{i+1}'
-                                if len(sheet_name) > 31:  # Excel has a 31 character limit for sheet names
-                                    sheet_name = sheet_name[:31]
-                                df.to_excel(writer, sheet_name=sheet_name, index=False)
-                    except Exception as excel_error:
-                        print(f"Error creating Excel file: {str(excel_error)}")
-                        excel_path = None
+                    excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
+                    with pd.ExcelWriter(excel_path) as writer:
+                        for i, table_data in enumerate(pdf_results['tables']):
+                            pd.DataFrame(table_data['data'], columns=table_data['columns']).to_excel(
+                                writer, sheet_name=f'Table_{i+1}', index=False
+                            )
                 
                 results.append({
                     "filename": filename,
@@ -369,7 +334,7 @@ def process_directory_endpoint():
                     "table_count": pdf_results['table_count'],
                     "text_file": f"{base_name}_extracted.txt",
                     "results_json": f"{base_name}_results.json",
-                    "excel_file": f"{base_name}_tables.xlsx" if excel_path else None
+                    "excel_file": f"{base_name}_tables.xlsx" if pdf_results['tables'] else None
                 })
                 
             except Exception as e:
@@ -383,19 +348,7 @@ def process_directory_endpoint():
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
-    
-    # Special handling for Excel files
-    if filename.endswith('.xlsx'):
-        if os.path.exists(file_path):
-            return send_file(file_path, 
-                           mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                           as_attachment=True)
-        else:
-            return "Excel file not found", 404
-    
-    # Default handling for other files
-    return send_file(file_path, as_attachment=True)
+    return send_file(os.path.join(app.config['OUTPUT_FOLDER'], filename), as_attachment=True)
 
 @app.route('/view-results/<filename>')
 def view_results(filename):
@@ -436,13 +389,7 @@ def clear_data():
         return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='PDF Scraper Server')
-    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
-    args = parser.parse_args()
-    
-    app.run(host='0.0.0.0', port=args.port, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
 @app.route('/generate-default-logo')
