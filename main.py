@@ -4,6 +4,19 @@ import PyPDF2
 import pdfplumber
 import pandas as pd
 from typing import Dict, List, Any
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+import json
+import shutil
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['OUTPUT_FOLDER'] = 'outputs'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
+
+# Ensure necessary directories exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 class PDFScraper:
     def __init__(self, pdf_path: str):
@@ -11,78 +24,263 @@ class PDFScraper:
         
     def extract_text_pypdf(self) -> str:
         """Extract text using PyPDF2"""
-        with open(self.pdf_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            text = ''
-            for page in reader.pages:
-                text += page.extract_text() + '\n'
-        return text
+        try:
+            with open(self.pdf_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                text = ''
+                for page in reader.pages:
+                    try:
+                        text += page.extract_text() + '\n'
+                    except Exception as e:
+                        text += f"[Error extracting page: {str(e)}]\n"
+            return text
+        except Exception as e:
+            return f"Error with PyPDF2 extraction: {str(e)}"
 
     def extract_text_pdfplumber(self) -> str:
         """Extract text using pdfplumber (better for complex layouts)"""
-        with pdfplumber.open(self.pdf_path) as pdf:
-            text = ''
-            for page in pdf.pages:
-                text += page.extract_text() + '\n'
-        return text
+        try:
+            with pdfplumber.open(self.pdf_path) as pdf:
+                text = ''
+                for page in pdf.pages:
+                    try:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + '\n'
+                        else:
+                            text += "[No text found on page]\n"
+                    except Exception as e:
+                        text += f"[Error extracting page: {str(e)}]\n"
+            return text
+        except Exception as e:
+            return f"Error with pdfplumber extraction: {str(e)}"
 
     def extract_tables(self) -> List[pd.DataFrame]:
         """Extract tables from PDF"""
         tables = []
-        with pdfplumber.open(self.pdf_path) as pdf:
-            for page in pdf.pages:
-                tables.extend(page.extract_tables())
-        return [pd.DataFrame(table) for table in tables if table]
+        try:
+            with pdfplumber.open(self.pdf_path) as pdf:
+                for i, page in enumerate(pdf.pages):
+                    try:
+                        page_tables = page.extract_tables()
+                        if page_tables:
+                            for table in page_tables:
+                                if table:  # Ensure table is not empty
+                                    tables.append(pd.DataFrame(table))
+                    except Exception as e:
+                        print(f"Error extracting tables from page {i}: {str(e)}")
+        except Exception as e:
+            print(f"Error with table extraction: {str(e)}")
+        return tables
 
     def extract_metadata(self) -> Dict[str, Any]:
         """Extract PDF metadata"""
-        with open(self.pdf_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            return reader.metadata
+        try:
+            with open(self.pdf_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                return reader.metadata
+        except Exception as e:
+            return {"error": str(e)}
 
-def process_directory(directory: str) -> Dict[str, Dict]:
-    """Process all PDFs in a directory"""
-    results = {}
+    def get_page_count(self) -> int:
+        """Get the number of pages in the PDF"""
+        try:
+            with open(self.pdf_path, 'rb') as file:
+                reader = PyPDF2.PdfReader(file)
+                return len(reader.pages)
+        except Exception as e:
+            return 0
+
+def process_pdf(file_path: str) -> Dict[str, Any]:
+    """Process a single PDF and return the results"""
+    filename = os.path.basename(file_path)
+    scraper = PDFScraper(file_path)
     
+    # Get text using both methods
+    text_pypdf = scraper.extract_text_pypdf()
+    text_pdfplumber = scraper.extract_text_pdfplumber()
+    
+    # Extract tables
+    tables = scraper.extract_tables()
+    tables_data = []
+    for i, table in enumerate(tables):
+        tables_data.append({
+            "id": i + 1,
+            "columns": table.columns.tolist(),
+            "data": table.values.tolist()
+        })
+    
+    # Get metadata and page count
+    metadata = scraper.extract_metadata()
+    page_count = scraper.get_page_count()
+    
+    return {
+        "filename": filename,
+        "page_count": page_count,
+        "metadata": metadata,
+        "text_pypdf": text_pypdf,
+        "text_pdfplumber": text_pdfplumber,
+        "tables": tables_data,
+        "table_count": len(tables)
+    }
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
+    if not file.filename.lower().endswith('.pdf'):
+        return jsonify({"error": "Only PDF files are allowed"}), 400
+    
+    # Save the uploaded file
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    # Process the PDF
+    try:
+        results = process_pdf(file_path)
+        
+        # Save results as JSON
+        base_name = os.path.splitext(filename)[0]
+        results_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_results.json")
+        with open(results_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, default=str)
+        
+        # Save extracted text to files
+        text_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_extracted.txt")
+        with open(text_path, 'w', encoding='utf-8') as f:
+            f.write(results['text_pdfplumber'])
+        
+        # Save tables to Excel if any found
+        if results['tables']:
+            excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
+            with pd.ExcelWriter(excel_path) as writer:
+                for i, table_data in enumerate(results['tables']):
+                    pd.DataFrame(table_data['data'], columns=table_data['columns']).to_excel(
+                        writer, sheet_name=f'Table_{i+1}', index=False
+                    )
+        
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "results_json": f"{base_name}_results.json",
+            "text_file": f"{base_name}_extracted.txt",
+            "excel_file": f"{base_name}_tables.xlsx" if results['tables'] else None,
+            "summary": {
+                "page_count": results['page_count'],
+                "table_count": results['table_count']
+            }
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/process-directory', methods=['POST'])
+def process_directory_endpoint():
+    directory = request.json.get('directory', 'attached_assets')
+    
+    if not os.path.exists(directory):
+        return jsonify({"error": f"Directory '{directory}' not found"}), 404
+    
+    results = []
     for filename in os.listdir(directory):
         if filename.lower().endswith('.pdf'):
             file_path = os.path.join(directory, filename)
-            scraper = PDFScraper(file_path)
-            
-            results[filename] = {
-                'text_pypdf': scraper.extract_text_pypdf(),
-                'text_pdfplumber': scraper.extract_text_pdfplumber(),
-                'tables': scraper.extract_tables(),
-                'metadata': scraper.extract_metadata()
-            }
+            try:
+                pdf_results = process_pdf(file_path)
+                
+                # Save results
+                base_name = os.path.splitext(filename)[0]
+                
+                # Save extracted text to file
+                text_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_extracted.txt")
+                with open(text_path, 'w', encoding='utf-8') as f:
+                    f.write(pdf_results['text_pdfplumber'])
+                
+                # Save results as JSON
+                results_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_results.json")
+                with open(results_path, 'w', encoding='utf-8') as f:
+                    json.dump(pdf_results, f, default=str)
+                
+                # Save tables to Excel if any found
+                excel_path = None
+                if pdf_results['tables']:
+                    excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
+                    with pd.ExcelWriter(excel_path) as writer:
+                        for i, table_data in enumerate(pdf_results['tables']):
+                            pd.DataFrame(table_data['data'], columns=table_data['columns']).to_excel(
+                                writer, sheet_name=f'Table_{i+1}', index=False
+                            )
+                
+                results.append({
+                    "filename": filename,
+                    "success": True,
+                    "page_count": pdf_results['page_count'],
+                    "table_count": pdf_results['table_count'],
+                    "text_file": f"{base_name}_extracted.txt",
+                    "results_json": f"{base_name}_results.json",
+                    "excel_file": f"{base_name}_tables.xlsx" if pdf_results['tables'] else None
+                })
+                
+            except Exception as e:
+                results.append({
+                    "filename": filename,
+                    "success": False,
+                    "error": str(e)
+                })
     
-    return results
+    return jsonify({"results": results})
 
-def main():
-    # Process PDFs in the attached_assets directory
-    directory = 'attached_assets'
-    results = process_directory(directory)
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_file(os.path.join(app.config['OUTPUT_FOLDER'], filename), as_attachment=True)
+
+@app.route('/view-results/<filename>')
+def view_results(filename):
+    try:
+        with open(os.path.join(app.config['OUTPUT_FOLDER'], filename), 'r', encoding='utf-8') as f:
+            results = json.load(f)
+        return render_template('results.html', results=results)
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@app.route('/list-files')
+def list_files():
+    upload_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.lower().endswith('.pdf')]
+    output_files = os.listdir(app.config['OUTPUT_FOLDER'])
     
-    # Print results for each PDF
-    for filename, data in results.items():
-        print(f"\nProcessing: {filename}")
-        print("Metadata:", data['metadata'])
-        print("\nExtracted Text (PyPDF2):", data['text_pypdf'][:500])
-        print("\nExtracted Text (pdfplumber):", data['text_pdfplumber'][:500])
-        print("\nNumber of tables found:", len(data['tables']))
+    return jsonify({
+        "uploads": upload_files,
+        "outputs": output_files
+    })
+
+@app.route('/clear-data', methods=['POST'])
+def clear_data():
+    try:
+        # Clear uploads folder
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
         
-        # Save extracted text to files
-        base_name = os.path.splitext(filename)[0]
-        
-        # Save as text file
-        with open(f"{base_name}_extracted.txt", 'w', encoding='utf-8') as f:
-            f.write(data['text_pdfplumber'])
-        
-        # Save tables to Excel if any found
-        if data['tables']:
-            with pd.ExcelWriter(f"{base_name}_tables.xlsx") as writer:
-                for i, table in enumerate(data['tables']):
-                    table.to_excel(writer, sheet_name=f'Table_{i+1}', index=False)
+        # Clear outputs folder
+        for filename in os.listdir(app.config['OUTPUT_FOLDER']):
+            file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+                
+        return jsonify({"success": True, "message": "All data cleared successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
-    main()
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Scraper - Interactive UI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="bi bi-file-earmark-pdf"></i> PDF Scraper</h3>
+                <button class="btn btn-link sidebar-toggle d-md-none" id="sidebarToggle">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-section="upload">
+                            <i class="bi bi-upload"></i> Upload PDF
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-section="batch">
+                            <i class="bi bi-folder"></i> Batch Process
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-section="files">
+                            <i class="bi bi-file-earmark-text"></i> Processed Files
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-section="settings">
+                            <i class="bi bi-gear"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                <button class="btn btn-danger w-100" id="clearDataBtn">
+                    <i class="bi bi-trash"></i> Clear All Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="mobile-header d-md-none">
+                <button class="btn btn-link" id="mobileMenuToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h4>PDF Scraper</h4>
+                <div></div> <!-- Empty div for flex alignment -->
+            </div>
+
+            <!-- Upload Section -->
+            <section id="upload-section" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="bi bi-upload"></i> Upload PDF</h2>
+                </div>
+                <div class="content-body">
+                    <div class="upload-container" id="dropArea">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <h3>Drag & Drop PDF Here</h3>
+                        <p>or</p>
+                        <label for="fileInput" class="btn btn-primary">Choose File</label>
+                        <input type="file" id="fileInput" accept=".pdf" class="d-none">
+                        <p class="text-muted mt-2">Max file size: 16MB</p>
+                    </div>
+
+                    <div id="uploadProgress" class="mt-4 d-none">
+                        <h4>Uploading...</h4>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div id="processingStatus" class="mt-4 d-none">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Processing Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="processingDetails"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Batch Process Section -->
+            <section id="batch-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="bi bi-folder"></i> Batch Process</h2>
+                </div>
+                <div class="content-body">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Process Directory</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Process all PDFs in the attached_assets directory</p>
+                            <button id="processDirectoryBtn" class="btn btn-primary">
+                                <i class="bi bi-play-fill"></i> Process Directory
+                            </button>
+
+                            <div id="batchProgress" class="mt-4 d-none">
+                                <h5>Processing Files...</h5>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                                </div>
+                                <div id="batchStatus" class="mt-3"></div>
+                            </div>
+
+                            <div id="batchResults" class="mt-4 d-none">
+                                <h5>Processing Results</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Filename</th>
+                                                <th>Status</th>
+                                                <th>Pages</th>
+                                                <th>Tables</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="batchResultsBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Processed Files Section -->
+            <section id="files-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="bi bi-file-earmark-text"></i> Processed Files</h2>
+                </div>
+                <div class="content-body">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Available Files</h5>
+                            <button id="refreshFilesBtn" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="filesTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="uploads-tab" data-bs-toggle="tab" data-bs-target="#uploads" type="button" role="tab">Uploads</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="outputs-tab" data-bs-toggle="tab" data-bs-target="#outputs" type="button" role="tab">Outputs</button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content mt-3" id="filesTabContent">
+                                <div class="tab-pane fade show active" id="uploads" role="tabpanel">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Filename</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="uploadsTableBody">
+                                                <tr>
+                                                    <td colspan="2" class="text-center">Loading files...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="outputs" role="tabpanel">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Filename</th>
+                                                    <th>Type</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="outputsTableBody">
+                                                <tr>
+                                                    <td colspan="3" class="text-center">Loading files...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="bi bi-gear"></i> Settings</h2>
+                </div>
+                <div class="content-body">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Application Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3 form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                                <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+                            </div>
+                            
+                            <h5 class="mt-4">Extraction Options</h5>
+                            <div class="mb-3 form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="extractTextToggle" checked>
+                                <label class="form-check-label" for="extractTextToggle">Extract Text</label>
+                            </div>
+                            <div class="mb-3 form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="extractTablesToggle" checked>
+                                <label class="form-check-label" for="extractTablesToggle">Extract Tables</label>
+                            </div>
+                            <div class="mb-3 form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="extractMetadataToggle" checked>
+                                <label class="form-check-label" for="extractMetadataToggle">Extract Metadata</label>
+                            </div>
+                            
+                            <h5 class="mt-4">About</h5>
+                            <p>PDF Scraper v1.0</p>
+                            <p>A powerful tool for extracting content from PDF files.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal for confirming clearing data -->
+    <div class="modal fade" id="clearDataModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to clear all uploaded and processed files?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmClearBtn">Yes, Clear All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
