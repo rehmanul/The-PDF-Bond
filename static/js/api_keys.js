@@ -1,5 +1,10 @@
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Fix for the console errors
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    
     // Toggle password visibility
     const togglePerplexityKey = document.getElementById('togglePerplexityKey');
     const perplexityApiKey = document.getElementById('perplexityApiKey');
