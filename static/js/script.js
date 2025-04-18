@@ -493,6 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveApiKey = document.getElementById('saveApiKey');
     const useSavedKey = document.getElementById('useSavedKey');
     const perplexityApiKey = document.getElementById('perplexityApiKey');
+    const togglePwdVisibility = document.getElementById('togglePwdVisibility');
     
     // Perplexity API toggle
     if (usePerplexity && perplexityApiSection) {
@@ -501,6 +502,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 perplexityApiSection.style.display = 'block';
             } else {
                 perplexityApiSection.style.display = 'none';
+            }
+        });
+    }
+    
+    // Toggle password visibility
+    if (togglePwdVisibility && perplexityApiKey) {
+        togglePwdVisibility.addEventListener('click', function() {
+            if (perplexityApiKey.type === 'password') {
+                perplexityApiKey.type = 'text';
+                togglePwdVisibility.innerHTML = '<i class="bi bi-eye-slash"></i>';
+            } else {
+                perplexityApiKey.type = 'password';
+                togglePwdVisibility.innerHTML = '<i class="bi bi-eye"></i>';
             }
         });
     }

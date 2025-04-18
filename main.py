@@ -4,6 +4,7 @@ import PyPDF2
 import pdfplumber
 import pandas as pd
 import requests
+import datetime
 from typing import Dict, List, Any
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 import json
@@ -34,8 +35,22 @@ def load_api_keys():
 def save_api_key(key_name, key_value):
     api_keys = load_api_keys()
     api_keys[key_name] = key_value
+    # Add timestamp for when keys were last updated
+    api_keys['updated_at'] = datetime.datetime.now().isoformat()
     with open(app.config['API_KEYS_FILE'], 'w') as f:
         json.dump(api_keys, f)
+    return True
+
+# Delete API key
+def delete_api_key(key_name):
+    api_keys = load_api_keys()
+    if key_name in api_keys:
+        del api_keys[key_name]
+        api_keys['updated_at'] = datetime.datetime.now().isoformat()
+        with open(app.config['API_KEYS_FILE'], 'w') as f:
+            json.dump(api_keys, f)
+        return True
+    return False
 
 class PDFScraper:
     def __init__(self, pdf_path: str, use_perplexity=False, api_key=None):
@@ -199,6 +214,10 @@ def process_pdf(file_path: str, use_perplexity=False, perplexity_api_key=None) -
 def index():
     return render_template('index.html')
 
+@app.route('/manage-api-keys')
+def manage_api_keys():
+    return render_template('api_keys.html')
+
 @app.route('/api-keys', methods=['GET'])
 def get_api_keys():
     return jsonify(load_api_keys())
@@ -208,9 +227,19 @@ def save_api_keys():
     key_name = request.json.get('name')
     key_value = request.json.get('value')
     if key_name and key_value:
-        save_api_key(key_name, key_value)
-        return jsonify({"success": True, "message": f"{key_name} saved successfully"})
-    return jsonify({"error": "Missing key name or value"}), 400
+        success = save_api_key(key_name, key_value)
+        if success:
+            return jsonify({"success": True, "message": f"{key_name} saved successfully"})
+        else:
+            return jsonify({"success": False, "error": "Failed to save API key"}), 500
+    return jsonify({"success": False, "error": "Missing key name or value"}), 400
+
+@app.route('/api-keys/<key_name>', methods=['DELETE'])
+def delete_api_key_route(key_name):
+    success = delete_api_key(key_name)
+    if success:
+        return jsonify({"success": True, "message": f"{key_name} deleted successfully"})
+    return jsonify({"success": False, "error": f"API key {key_name} not found"}), 404
 
 @app.route('/upload', methods=['POST'])
 def upload_file():

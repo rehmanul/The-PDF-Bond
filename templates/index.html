@@ -43,6 +43,11 @@
                             <i class="bi bi-gear"></i> Settings
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('manage_api_keys') }}">
+                            <i class="bi bi-key"></i> API Keys
+                        </a>
+                    </li>
                 </ul>
             </div>
             <div class="sidebar-footer">
@@ -104,11 +109,29 @@
                         </div>
 
                         <div id="perplexityApiSection" class="mt-2" style="display: none;">
-                            <div class="input-group">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="useSavedKey" name="use_saved_key" value="true">
+                                <label class="form-check-label" for="useSavedKey">
+                                    Use saved API key
+                                </label>
+                                <button type="button" class="btn btn-sm btn-info ms-2" id="loadSavedKeyBtn">Load Key</button>
+                            </div>
+                            <div class="input-group mb-3">
                                 <span class="input-group-text">API Key</span>
                                 <input type="password" class="form-control" id="perplexityApiKey" name="perplexity_api_key" placeholder="Enter your Perplexity API key">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePwdVisibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                             </div>
-                            <small class="text-muted">Your API key is used only for this request and not stored on the server.</small>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="saveApiKey" name="save_key" value="true">
+                                <label class="form-check-label" for="saveApiKey">
+                                    Save this API key for future use
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Need to manage your API keys? <a href="{{ url_for('manage_api_keys') }}">Go to API Keys Management</a></small>
+                            </div>
                         </div>
                     </div>
                 </div>
