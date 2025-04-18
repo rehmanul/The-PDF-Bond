@@ -349,12 +349,18 @@ def process_directory_endpoint():
                 # Save tables to Excel if any found
                 excel_path = None
                 if pdf_results['tables']:
-                    excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
-                    with pd.ExcelWriter(excel_path) as writer:
-                        for i, table_data in enumerate(pdf_results['tables']):
-                            pd.DataFrame(table_data['data'], columns=table_data['columns']).to_excel(
-                                writer, sheet_name=f'Table_{i+1}', index=False
-                            )
+                    try:
+                        excel_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{base_name}_tables.xlsx")
+                        with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+                            for i, table_data in enumerate(pdf_results['tables']):
+                                df = pd.DataFrame(table_data['data'], columns=table_data['columns'])
+                                sheet_name = f'Table_{i+1}'
+                                if len(sheet_name) > 31:  # Excel has a 31 character limit for sheet names
+                                    sheet_name = sheet_name[:31]
+                                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    except Exception as excel_error:
+                        print(f"Error creating Excel file: {str(excel_error)}")
+                        excel_path = None
                 
                 results.append({
                     "filename": filename,
@@ -363,7 +369,7 @@ def process_directory_endpoint():
                     "table_count": pdf_results['table_count'],
                     "text_file": f"{base_name}_extracted.txt",
                     "results_json": f"{base_name}_results.json",
-                    "excel_file": f"{base_name}_tables.xlsx" if pdf_results['tables'] else None
+                    "excel_file": f"{base_name}_tables.xlsx" if excel_path else None
                 })
                 
             except Exception as e:
@@ -377,7 +383,19 @@ def process_directory_endpoint():
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    return send_file(os.path.join(app.config['OUTPUT_FOLDER'], filename), as_attachment=True)
+    file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+    
+    # Special handling for Excel files
+    if filename.endswith('.xlsx'):
+        if os.path.exists(file_path):
+            return send_file(file_path, 
+                           mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                           as_attachment=True)
+        else:
+            return "Excel file not found", 404
+    
+    # Default handling for other files
+    return send_file(file_path, as_attachment=True)
 
 @app.route('/view-results/<filename>')
 def view_results(filename):
