@@ -4,4 +4,8 @@ version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pandas>=2.2.3",
+    "pdfplumber>=0.11.6",
+    "pypdf2>=3.0.1",
+]
