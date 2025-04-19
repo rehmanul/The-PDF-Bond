@@ -7,12 +7,62 @@
     <title>The PDF Bond</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
-    <meta http-equiv="refresh" content="0;url=/" />
 </head>
 <body>
-    <div class="container text-center mt-5">
-        <h1>Redirecting to The PDF Bond application...</h1>
-        <p>If you are not redirected automatically, <a href="/">click here</a>.</p>
+    <div class="container">
+        <header class="my-4 text-center">
+            <h1 class="display-4">The PDF Bond</h1>
+            <p class="lead">Extract, analyze, and process information from PDF documents</p>
+        </header>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Upload a PDF</h5>
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <input class="form-control" type="file" id="pdfFile" name="pdf_file" accept=".pdf" required>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="usePerplexity" name="use_perplexity">
+                                <label class="form-check-label" for="usePerplexity">Use Perplexity AI for enhanced analysis</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Extract Data</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Benefit Extraction</h5>
+                        <p>Extract insurance benefit information from PDF documents.</p>
+                        <a href="/benefit-extraction.html" class="btn btn-outline-primary">Go to Benefit Extraction</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">API Key Management</h5>
+                        <p>Add or update API keys for enhanced analysis capabilities.</p>
+                        <a href="/api-keys.html" class="btn btn-outline-primary">Manage API Keys</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="mt-4" style="display: none;">
+            <h2>Extraction Results</h2>
+            <div id="resultContent"></div>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js"></script>
 </body>
 </html>
