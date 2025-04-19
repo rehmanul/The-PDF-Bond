@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update uploads table
                 if (uploadsTableBody) {
-                    if (!data.uploads || data.uploads.length === 0) {
+                    if (!data.uploads || !Array.isArray(data.uploads) || data.uploads.length === 0) {
                         uploadsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">No files uploaded</td></tr>';
                     } else {
                         uploadsTableBody.innerHTML = '';

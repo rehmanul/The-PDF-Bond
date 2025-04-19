@@ -254,9 +254,13 @@ def get_api_keys(event, headers):
         else:
             response_keys = api_keys.get('keys', [])
             
+        # Add Content-Type header for JSON response
+        response_headers = headers.copy()
+        response_headers['Content-Type'] = 'application/json'
+            
         return {
             'statusCode': 200,
-            'headers': headers,
+            'headers': response_headers,
             'body': json.dumps({
                 'success': True,
                 'keys': response_keys
