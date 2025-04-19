@@ -451,7 +451,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // File listing
     function refreshFiles() {
         fetch('/.netlify/functions/api/list-files')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 // Update uploads table
                 if (uploadsTableBody) {
@@ -493,44 +498,46 @@ document.addEventListener('DOMContentLoaded', function() {
                         outputsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">No output files</td></tr>';
                     } else {
                         outputsTableBody.innerHTML = '';
-                        data.outputs.forEach(filename => {
-                            const row = document.createElement('tr');
+                        if (Array.isArray(data.outputs)) {
+                            data.outputs.forEach(filename => {
+                                const row = document.createElement('tr');
 
-                            let fileType = 'Unknown';
-                            let icon = 'file';
+                                let fileType = 'Unknown';
+                                let icon = 'file';
 
-                            if (filename.endsWith('.txt')) {
-                                fileType = 'Text';
-                                icon = 'file-text';
-                            } else if (filename.endsWith('.xlsx')) {
-                                fileType = 'Excel';
-                                icon = 'file-excel';
-                            } else if (filename.endsWith('.json')) {
-                                fileType = 'JSON';
-                                icon = 'file-code';
-                            }
+                                if (filename.endsWith('.txt')) {
+                                    fileType = 'Text';
+                                    icon = 'file-text';
+                                } else if (filename.endsWith('.xlsx')) {
+                                    fileType = 'Excel';
+                                    icon = 'file-excel';
+                                } else if (filename.endsWith('.json')) {
+                                    fileType = 'JSON';
+                                    icon = 'file-code';
+                                }
 
-                            let viewButton = '';
-                            if (filename.endsWith('_results.json')) {
-                                viewButton = `
-                                    <a href="/view-results/${filename}" class="btn btn-sm btn-primary me-1">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
+                                let viewButton = '';
+                                if (filename.endsWith('_results.json')) {
+                                    viewButton = `
+                                        <a href="/view-results/${filename}" class="btn btn-sm btn-primary me-1">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    `;
+                                }
+
+                                row.innerHTML = `
+                                    <td>${filename}</td>
+                                    <td><i class="bi bi-${icon}"></i> ${fileType}</td>
+                                    <td>
+                                        ${viewButton}
+                                        <a href="/download/${filename}" class="btn btn-sm btn-secondary">
+                                            <i class="bi bi-download"></i> Download
+                                        </a>
+                                    </td>
                                 `;
-                            }
-
-                            row.innerHTML = `
-                                <td>${filename}</td>
-                                <td><i class="bi bi-${icon}"></i> ${fileType}</td>
-                                <td>
-                                    ${viewButton}
-                                    <a href="/download/${filename}" class="btn btn-sm btn-secondary">
-                                        <i class="bi bi-download"></i> Download
-                                    </a>
-                                </td>
-                            `;
-                            outputsTableBody.appendChild(row);
-                        });
+                                outputsTableBody.appendChild(row);
+                            });
+                        }
                     }
                 }
             })

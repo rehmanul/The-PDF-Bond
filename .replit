@@ -10,7 +10,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "bash netlify.sh && npx netlify-cli deploy --prod"]
 
 [workflows]
-runButton = "Run Flask App"
+runButton = "Deploy to Netlify"
 
 [[workflows.workflow]]
 name = "Project"

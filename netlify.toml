@@ -1,6 +1,6 @@
 
 [build]
-  command = "chmod +x netlify.sh && ./netlify.sh"
+  command = "sh netlify.sh"
   publish = "static"
   functions = "netlify/functions"
 
@@ -8,11 +8,11 @@
   node_bundler = "esbuild"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 [[redirects]]
-  from = "/.netlify/functions/api/*"
-  to = "/.netlify/functions/api"
+  from = "/*"
+  to = "/index.html"
   status = 200

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            if (!fileInput.files || fileInput.files.length === 0) {
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                 showResults('Please select a PDF file to upload', true);
                 return;
             }
@@ -36,7 +36,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            // Try to parse as JSON first
+                            return JSON.parse(text);
+                        } catch (e) {
+                            // If it's not valid JSON, throw the text as an error
+                            throw new Error(text || `HTTP error! status: ${response.status}`);
+                        }
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 // Reset button state
                 if (submitButton) {
@@ -57,6 +70,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
+                console.error("Error in benefit extraction:", error);
+                
                 // Reset button state
                 if (submitButton) {
                     submitButton.disabled = false;

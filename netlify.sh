@@ -1,9 +1,10 @@
 #!/bin/bash
+set -e
 
-# Install necessary packages
+echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
-# Create directories
+echo "Setting up directory structure..."
 mkdir -p netlify/functions
 mkdir -p static/js
 mkdir -p static/css
@@ -12,12 +13,10 @@ mkdir -p downloads
 touch uploads/.gitkeep
 touch downloads/.gitkeep
 
-# Copy static files if needed
-if [ ! -f static/index.html ]; then
-  cp -r templates/* static/ 2>/dev/null || :
-  # Update file paths in HTML files
-  find static -name "*.html" -type f -exec sed -i 's|{{ url_for('"'"'static'"'"', filename='"'"'\([^'"'"']*\)'"'"') }}|/\1|g' {} \;
-fi
+echo "Copying files to correct locations..."
+cp -r templates/* static/ 2>/dev/null || :
+find static -name "*.html" -type f -exec sed -i 's|{{ url_for('"'"'static'"'"', filename='"'"'\([^'"'"']*\)'"'"') }}|/\1|g' {} \;
+
 
 # Ensure netlify functions directory exists
 mkdir -p netlify/functions
