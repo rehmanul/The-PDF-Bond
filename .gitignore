@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+.env.local
+node_modules/
+api_keys.json
+*.log
+uploads/*
+!uploads/.gitkeep
+downloads/*
+!downloads/.gitkeep
