@@ -1,15 +1,13 @@
 
 [build]
+  base = "/"
+  publish = "static"
   command = "pip install -r requirements.txt"
-  publish = "static"
-  functions = "netlify/functions"
 
-[dev]
-  command = "python main.py"
-  port = 5000
-  publish = "static"
+[functions]
+  directory = "netlify/functions"
 
 [[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
