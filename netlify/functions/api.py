@@ -1,9 +1,11 @@
 import json
 import os
-import tempfile
 import base64
 from urllib.parse import parse_qs
+import tempfile
+import sys
 import traceback
+from datetime import datetime
 
 def load_api_keys():
     """Load API keys from the JSON file."""
@@ -17,110 +19,48 @@ def load_api_keys():
 
 def save_api_keys(keys):
     """Save API keys to the JSON file."""
-    keys['updated_at'] = '' # Current timestamp will be added in production
+    keys['updated_at'] = datetime.now().isoformat()
     with open('api_keys.json', 'w') as f:
         json.dump(keys, f)
     return True
 
-def lambda_handler(event, context):
-    """Netlify function handler to process API requests."""
+def handler(event, context):
     try:
+        # Parse path to determine which function to call
         path = event['path']
-        http_method = event['httpMethod']
+        path_parts = path.split('/')
+        function_name = path_parts[-1] if len(path_parts) > 0 else ''
 
-        # Add CORS headers
+        # Set CORS headers
         headers = {
-            'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         }
 
-        # Handle OPTIONS request (for CORS preflight)
-        if http_method == 'OPTIONS':
+        # Handle OPTIONS request (CORS preflight)
+        if event['httpMethod'] == 'OPTIONS':
             return {
                 'statusCode': 200,
                 'headers': headers,
                 'body': ''
             }
 
-        # Parse the path to get the API endpoint
-        if path.startswith('/.netlify/functions/api'):
-            path = path[len('/.netlify/functions/api'):]
+        # Route to appropriate function
+        if function_name == 'extract-benefits':
+            return extract_benefits(event, headers)
+        elif function_name == 'save-api-key':
+            return save_api_key(event, headers)
+        elif function_name == 'get-api-keys':
+            return get_api_keys(event, headers)
+        elif function_name == 'delete-api-key':
+            return delete_api_key(event, headers)
+        elif function_name == 'upload':
+            return process_upload(event, headers)
+        elif function_name == 'download':
+            filename = path_parts[-2] if len(path_parts) > 1 else ''
+            return download_file(filename, headers)
 
-        # Default response
-        response = {
-            'statusCode': 404,
-            'body': json.dumps({'error': 'Endpoint not found'}),
-            'headers': headers
-        }
-
-        # Handle API keys endpoint
-        if path == '/api-keys' and http_method == 'GET':
-            api_keys = load_api_keys()
-            response = {
-                'statusCode': 200,
-                'body': json.dumps(api_keys),
-                'headers': headers
-            }
-        elif path == '/api-keys' and http_method == 'POST':
-            body = json.loads(event['body']) if event.get('body') else {}
-            name = body.get('name')
-            value = body.get('value')
-
-            if name and value:
-                api_keys = load_api_keys()
-                api_keys[name] = value
-                save_api_keys(api_keys)
-
-                response = {
-                    'statusCode': 200,
-                    'body': json.dumps({'success': True}),
-                    'headers': headers
-                }
-            else:
-                response = {
-                    'statusCode': 400,
-                    'body': json.dumps({'error': 'Missing name or value'}),
-                    'headers': headers
-                }
-        elif path.startswith('/api-keys/') and http_method == 'DELETE':
-            key_name = path.split('/')[-1]
-            api_keys = load_api_keys()
-
-            if key_name in api_keys:
-                del api_keys[key_name]
-                save_api_keys(api_keys)
-
-                response = {
-                    'statusCode': 200,
-                    'body': json.dumps({'success': True}),
-                    'headers': headers
-                }
-            else:
-                response = {
-                    'statusCode': 404,
-                    'body': json.dumps({'error': 'API key not found'}),
-                    'headers': headers
-                }
-        # Upload endpoint (mock for now)
-        elif path == '/upload' and http_method == 'POST':
-            response = {
-                'statusCode': 200,
-                'body': json.dumps({
-                    'success': True,
-                    'result': {
-                        'filename': 'example.pdf',
-                        'pages': 5,
-                        'text_length': 1250,
-                        'text_file': 'example.txt',
-                    }
-                }),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
-            }
-        # Default API info response
         elif path == '' or path == '/':
             response = {
                 'statusCode': 200,
@@ -128,7 +68,9 @@ def lambda_handler(event, context):
                     'message': 'PDF Bond API',
                     'status': 'online',
                     'endpoints': [
-                        '/api-keys',
+                        '/save-api-key',
+                        '/get-api-keys',
+                        '/delete-api-key',
                         '/upload',
                         '/extract-benefits',
                         '/download/{filename}'
@@ -138,39 +80,103 @@ def lambda_handler(event, context):
                     'Content-Type': 'application/json'
                 }
             }
+            return response
+
+        else:
+            # Default response for unhandled routes
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({
+                    'success': False,
+                    'error': f'Route not found: {path}'
+                })
+            }
 
     except Exception as e:
-        traceback_str = traceback.format_exc()
-        response = {
+        # Log the full error for debugging
+        print(f"Error in API handler: {str(e)}")
+        print(traceback.format_exc())
+
+        # Return a formatted error response
+        return {
             'statusCode': 500,
-            'body': json.dumps({
-                'error': f'Server error: {str(e)}', 
-                'trace': traceback_str
-            }),
             'headers': {
+                'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json'
-            }
+            },
+            'body': json.dumps({
+                'success': False,
+                'error': f'Server error: {str(e)}'
+            })
         }
 
-    return response
-
-# Make handler compatible with different serverless platforms
-def handler(event, context):
-    return lambda_handler(event, context)
-
-def get_api_keys():
-    """Get all API keys"""
-    api_keys = load_api_keys()
-    return {
-        'statusCode': 200,
-        'body': json.dumps(api_keys),
-        'headers': {'Content-Type': 'application/json'}
-    }
-
-def save_api_key(event):
-    """Save an API key"""
+def extract_benefits(event, headers):
+    """Extract benefits from uploaded insurance document"""
     try:
-        # Parse request body
+        # Parse multipart form data
+        content_type = event.get('headers', {}).get('content-type', '')
+
+        if not content_type.startswith('multipart/form-data'):
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Invalid content type. Expected multipart/form-data.'
+                })
+            }
+
+        # This is a simplified approach - in a real implementation, you'd need to parse multipart/form-data properly
+        # For demo purposes, we'll return sample benefit data
+
+        sample_benefits = [
+            {
+                "type": "Medical",
+                "deductible": "$500",
+                "out_of_pocket_max": "$3,000",
+                "copay": "$25",
+                "coinsurance": "20%"
+            },
+            {
+                "type": "Dental",
+                "deductible": "$50",
+                "annual_maximum": "$1,500",
+                "preventive_coverage": "100%",
+                "basic_services": "80%",
+                "major_services": "50%"
+            },
+            {
+                "type": "Vision",
+                "exam_copay": "$10",
+                "frame_allowance": "$150",
+                "lens_copay": "$25",
+                "contact_allowance": "$150"
+            }
+        ]
+
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps({
+                'success': True,
+                'benefits': sample_benefits
+            })
+        }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Error processing benefits: {str(e)}'
+            })
+        }
+
+def save_api_key(event, headers):
+    """Save API key to server"""
+    try:
         body = json.loads(event['body'])
         name = body.get('name')
         value = body.get('value')
@@ -178,65 +184,89 @@ def save_api_key(event):
         if not name or not value:
             return {
                 'statusCode': 400,
-                'body': json.dumps({'success': False, 'error': 'API name and value are required'}),
-                'headers': {'Content-Type': 'application/json'}
+                'headers': headers,
+                'body': json.dumps({'success': False, 'error': 'API name and value are required'})
             }
-
-        # Load existing keys
         api_keys = load_api_keys()
-
-        # Add or update the key
-        from datetime import datetime
         api_keys[name] = value
-        api_keys['updated_at'] = datetime.now().isoformat()
-
-        # Save to file
-        with open('api_keys.json', 'w') as f:
-            json.dump(api_keys, f)
-
+        save_api_keys(api_keys)
         return {
             'statusCode': 200,
-            'body': json.dumps({'success': True}),
-            'headers': {'Content-Type': 'application/json'}
+            'headers': headers,
+            'body': json.dumps({
+                'success': True,
+                'message': 'API key saved successfully'
+            })
         }
     except Exception as e:
         return {
             'statusCode': 500,
-            'body': json.dumps({'success': False, 'error': str(e)}),
-            'headers': {'Content-Type': 'application/json'}
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Error saving API key: {str(e)}'
+            })
         }
 
-def delete_api_key(key_name):
+def get_api_keys(event, headers):
+    """Get saved API keys"""
+    try:
+        api_keys = load_api_keys()
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps({
+                'success': True,
+                'keys': api_keys
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Error retrieving API keys: {str(e)}'
+            })
+        }
+
+def delete_api_key(event, headers):
     """Delete an API key"""
     try:
+        key_name = event['path'].split('/')[-1]
         api_keys = load_api_keys()
 
         if key_name in api_keys:
             del api_keys[key_name]
-
-            # Save updated keys
-            with open('api_keys.json', 'w') as f:
-                json.dump(api_keys, f)
-
+            save_api_keys(api_keys)
             return {
                 'statusCode': 200,
-                'body': json.dumps({'success': True}),
-                'headers': {'Content-Type': 'application/json'}
+                'headers': headers,
+                'body': json.dumps({
+                    'success': True,
+                    'message': 'API key deleted successfully'
+                })
             }
         else:
             return {
                 'statusCode': 404,
-                'body': json.dumps({'success': False, 'error': 'API key not found'}),
-                'headers': {'Content-Type': 'application/json'}
+                'headers': headers,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'API key not found'
+                })
             }
     except Exception as e:
         return {
             'statusCode': 500,
-            'body': json.dumps({'success': False, 'error': str(e)}),
-            'headers': {'Content-Type': 'application/json'}
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Error deleting API key: {str(e)}'
+            })
         }
 
-def process_upload(event):
+def process_upload(event, headers):
     """Process PDF upload"""
     # This is a placeholder - in a real implementation, you would:
     # 1. Parse the multipart form data
@@ -255,10 +285,10 @@ def process_upload(event):
                 'text_file': 'example_text.txt'
             }
         }),
-        'headers': {'Content-Type': 'application/json'}
+        'headers': headers
     }
 
-def download_file(filename):
+def download_file(filename, headers):
     """Download a file"""
     # This is a placeholder - in a real implementation, you would:
     # 1. Validate the filename
@@ -272,63 +302,4 @@ def download_file(filename):
             'Content-Type': 'text/plain',
             'Content-Disposition': f'attachment; filename="{filename}"'
         }
-    }
-
-def extract_benefits(event):
-    """Extract benefits from a PDF"""
-    # This is a placeholder - in a real implementation, you would:
-    # 1. Parse the multipart form data
-    # 2. Save the PDF file
-    # 3. Process it with the benefit extractor
-    # 4. Return the results
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'success': True,
-            'result': {
-                'carrier_name': 'Example Insurance',
-                'plan_name': 'Standard PPO',
-                'deductible': {
-                    'individual_in_network': '$1,000',
-                    'family_in_network': '$2,000',
-                    'individual_out_network': '$2,000',
-                    'family_out_network': '$4,000'
-                },
-                'out_of_pocket': {
-                    'individual_in_network': '$3,000',
-                    'family_in_network': '$6,000',
-                    'individual_out_network': '$6,000',
-                    'family_out_network': '$12,000'
-                },
-                'coinsurance': {
-                    'in_network': '20%',
-                    'out_network': '40%'
-                },
-                'office_visits': {
-                    'primary_care_in_network': '$25',
-                    'specialist_in_network': '$50',
-                    'primary_care_out_network': '$50',
-                    'specialist_out_network': '$100'
-                },
-                'urgent_emergency': {
-                    'urgent_care_in_network': '$50',
-                    'emergency_room_in_network': '$250',
-                    'urgent_care_out_network': '$100',
-                    'emergency_room_out_network': '$250'
-                },
-                'rx': {
-                    'tier1': '$10',
-                    'tier2': '$30',
-                    'tier3': '$50',
-                    'tier4': '$100'
-                },
-                'plan_metadata': {
-                    'plan_type': 'PPO',
-                    'hsa_eligible': 'No'
-                }
-            },
-            'excel_file': 'benefits_example.xlsx'
-        }),
-        'headers': {'Content-Type': 'application/json'}
     }

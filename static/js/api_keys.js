@@ -58,22 +58,29 @@ document.addEventListener('DOMContentLoaded', function() {
             currentKeysContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
             
             fetch('/.netlify/functions/api/get-api-keys')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    if (data.success && data.keys && data.keys.length > 0) {
+                    if (data.success && data.keys && Array.isArray(data.keys) && data.keys.length > 0) {
                         let html = '<div class="list-group">';
                         data.keys.forEach(item => {
-                            html += `
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-0">${item.name}</h6>
-                                        <small class="text-muted">●●●●●●●●●●●●●●●●</small>
+                            if (item && item.name) {
+                                html += `
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">${item.name}</h6>
+                                            <small class="text-muted">●●●●●●●●●●●●●●●●</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-danger delete-key" data-key-name="${item.name}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </div>
-                                    <button class="btn btn-sm btn-danger delete-key" data-key-name="${item.name}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            `;
+                                `;
+                            }
                         });
                         html += '</div>';
                         currentKeysContainer.innerHTML = html;
@@ -82,7 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.querySelectorAll('.delete-key').forEach(button => {
                             button.addEventListener('click', function() {
                                 const keyName = this.getAttribute('data-key-name');
-                                deleteApiKey(keyName);
+                                if (keyName) {
+                                    deleteApiKey(keyName);
+                                }
                             });
                         });
                     } else {
@@ -90,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    currentKeysContainer.innerHTML = '<div class="alert alert-danger">Failed to load API keys</div>';
+                    currentKeysContainer.innerHTML = '<div class="alert alert-danger">Failed to load API keys: ' + error.message + '</div>';
                     console.error('Error loading API keys:', error);
                 });
         }
