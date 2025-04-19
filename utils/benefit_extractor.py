@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import logging
 import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple
@@ -573,11 +574,24 @@ class BenefitExtractor:
                 elif "%" in str(value) and "deductible" not in str(value).lower() and key not in ["preventive_care_in", "carrier_name", "plan_name", "network_type", "effective_date", "plan_year"]:
                     formatted[key] = f"{value} after deductible"
                 else:
-                    formatted[key] = value
+                    # Ensure value is serializable (convert to string if needed)
+                    try:
+                        json.dumps({key: value})
+                        formatted[key] = value
+                    except (TypeError, ValueError):
+                        formatted[key] = str(value)
         
         # Set emergency room out-of-network to match in-network (per formatting rules)
         if "emergency_room" in formatted and formatted.get("emergency_room") != "Not Found":
             formatted["emergency_room_out"] = formatted["emergency_room"]
+        
+        # Make sure the entire object is serializable 
+        try:
+            json.dumps(formatted)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Error serializing benefits: {str(e)}")
+            # Make a clean serializable copy with strings only
+            formatted = {k: str(v) if v is not None else "Not Found" for k, v in formatted.items()}
         
         return formatted
 
