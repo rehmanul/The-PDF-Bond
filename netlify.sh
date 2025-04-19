@@ -1,20 +1,31 @@
+
 #!/bin/bash
 
-# This script helps deploy the application to Replit
+# Netlify deployment script
 
-echo "Preparing for Replit deployment..."
-
-# Ensure requirements.txt is available
-if [ ! -f "requirements.txt" ]; then
-    echo "Error: requirements.txt not found!"
-    exit 1
+# Ensure the netlify CLI is installed
+if ! command -v netlify &> /dev/null; then
+    echo "Installing Netlify CLI..."
+    npm install -g netlify-cli
 fi
 
-# Create uploads and downloads directories if they don't exist
+# Create necessary directories
+mkdir -p netlify/functions
+
+# Create requirements.txt if it doesn't exist
+if [ ! -f requirements.txt ]; then
+    echo "Creating requirements.txt from pyproject.toml..."
+    python -c "import toml; deps = toml.load('pyproject.toml')['project']['dependencies']; print('\n'.join(deps))" > requirements.txt
+fi
+
+# Ensure uploads and downloads directories exist
 mkdir -p uploads
 mkdir -p downloads
 touch uploads/.gitkeep
 touch downloads/.gitkeep
 
-echo "Deployment preparation complete."
-echo "Deploy to Replit using the Deployments tab in the sidebar."
+# Deploy to Netlify
+echo "Deploying to Netlify..."
+netlify deploy --prod
+
+echo "Deployment completed!"
