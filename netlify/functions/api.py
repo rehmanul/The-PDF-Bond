@@ -27,6 +27,22 @@ def lambda_handler(event, context):
     try:
         path = event['path']
         http_method = event['httpMethod']
+        
+        # Add CORS headers
+        headers = {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
+        }
+        
+        # Handle OPTIONS request (for CORS preflight)
+        if http_method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': ''
+            }
 
         # Parse the path to get the API endpoint
         if path.startswith('/.netlify/functions/api'):
@@ -36,9 +52,7 @@ def lambda_handler(event, context):
         response = {
             'statusCode': 404,
             'body': json.dumps({'error': 'Endpoint not found'}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': headers
         }
 
         # Handle API keys endpoint
@@ -47,9 +61,7 @@ def lambda_handler(event, context):
             response = {
                 'statusCode': 200,
                 'body': json.dumps(api_keys),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
+                'headers': headers
             }
         elif path == '/api-keys' and http_method == 'POST':
             body = json.loads(event['body']) if event.get('body') else {}
@@ -64,17 +76,13 @@ def lambda_handler(event, context):
                 response = {
                     'statusCode': 200,
                     'body': json.dumps({'success': True}),
-                    'headers': {
-                        'Content-Type': 'application/json'
-                    }
+                    'headers': headers
                 }
             else:
                 response = {
                     'statusCode': 400,
                     'body': json.dumps({'error': 'Missing name or value'}),
-                    'headers': {
-                        'Content-Type': 'application/json'
-                    }
+                    'headers': headers
                 }
         elif path.startswith('/api-keys/') and http_method == 'DELETE':
             key_name = path.split('/')[-1]
@@ -87,17 +95,13 @@ def lambda_handler(event, context):
                 response = {
                     'statusCode': 200,
                     'body': json.dumps({'success': True}),
-                    'headers': {
-                        'Content-Type': 'application/json'
-                    }
+                    'headers': headers
                 }
             else:
                 response = {
                     'statusCode': 404,
                     'body': json.dumps({'error': 'API key not found'}),
-                    'headers': {
-                        'Content-Type': 'application/json'
-                    }
+                    'headers': headers
                 }
         # Upload endpoint (mock for now)
         elif path == '/upload' and http_method == 'POST':

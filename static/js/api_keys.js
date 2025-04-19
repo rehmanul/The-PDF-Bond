@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
     const apiKeyForm = document.getElementById('apiKeyForm');
     const apiKeysList = document.getElementById('apiKeysList');
@@ -9,9 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
         apiKeyForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const formData = new FormData(apiKeyForm);
-            const apiName = formData.get('name');
-            const apiValue = formData.get('value');
+            const apiName = document.getElementById('apiName').value;
+            const apiValue = document.getElementById('apiValue').value;
 
             fetch('/.netlify/functions/api/api-keys', {
                 method: 'POST',
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error loading API keys:', error);
-            apiKeysList.innerHTML = `<div class="alert alert-danger">Failed to load API keys</div>`;
+            apiKeysList.innerHTML = `<div class="alert alert-danger">Failed to load API keys: ${error}</div>`;
         });
     }
 
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${key}</td>
                     <td>${maskedValue}</td>
                     <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteApiKey('${key}')">Delete</button>
+                        <button class="btn btn-sm btn-danger delete-key" onclick="deleteApiKey('${key}')">Delete</button>
                     </td>
                 </tr>`;
             });
@@ -91,27 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
     }
-
-    // Add global function for deleting API keys
-    window.deleteApiKey = function(keyName) {
-        if (confirm(`Are you sure you want to delete the ${keyName} API key?`)) {
-            fetch(`/.netlify/functions/api/api-keys/${keyName}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('success', `API key for ${keyName} deleted successfully.`);
-                    loadApiKeys();
-                } else {
-                    showAlert('danger', data.error || 'Failed to delete API key.');
-                }
-            })
-            .catch(error => {
-                showAlert('danger', 'Error: ' + error);
-            });
-        }
-    };
 
     function showAlert(type, message) {
         const alertDiv = document.createElement('div');
@@ -131,3 +110,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 });
+
+// Global function for deleting API keys
+function deleteApiKey(keyName) {
+    if (confirm(`Are you sure you want to delete the ${keyName} API key?`)) {
+        fetch(`/.netlify/functions/api/api-keys/${keyName}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-success alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    API key for ${keyName} deleted successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                const container = document.querySelector('.container');
+                container.insertBefore(alertDiv, container.firstChild);
+                
+                // Reload the API keys list
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert(data.error || 'Failed to delete API key.');
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}

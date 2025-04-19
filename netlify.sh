@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Netlify deployment script
@@ -29,6 +28,19 @@ if [ ! -f netlify/functions/api.py ]; then
     echo "Creating netlify/functions/api.py..."
     cp attached_assets/api.py netlify/functions/api.py
 fi
+
+# Create netlify/functions directory if it doesn't exist
+mkdir -p netlify/functions
+
+# Copy API function to netlify/functions
+cp -f attached_assets/api.py netlify/functions/api.py
+
+# Ensure the functions directory has proper permissions
+chmod -R 755 netlify/functions
+
+# Create an empty api_keys.json file if it doesn't exist
+touch api_keys.json
+chmod 644 api_keys.json
 
 # Deploy to Netlify
 echo "Deploying to Netlify..."
