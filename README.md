@@ -1,6 +1,6 @@
 # The PDF Bond
 
-A Flask-based web application for extracting, analyzing, and processing information from PDF documents, with specialized features for insurance benefit extraction.
+A production-ready Flask-based web application for extracting, analyzing, and processing information from PDF documents, with specialized features for insurance benefit extraction.
 
 ## Features
 
@@ -33,6 +33,7 @@ For AI-powered analysis, you'll need a Perplexity API key. Add it in the API Key
 ## Deployment
 
 This application can be deployed on Netlify using the included netlify.toml configuration.
+For detailed deployment instructions, see the [NETLIFY.md](NETLIFY.md) file.
 
 ## License
 
