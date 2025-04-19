@@ -43,7 +43,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gunicorn --bind 0.0.0.0:5000 --worker-class=gthread --threads=3 main:app"
+args = "python main.py"
 
 [[workflows.workflow]]
 name = "Deploy"
