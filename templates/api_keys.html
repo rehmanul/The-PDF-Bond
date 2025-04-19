@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys Management - PDF Scraper</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <a href="/" class="text-decoration-none d-flex align-items-center">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2V8H20" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 13H15" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 17H15" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M11 9H12" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h3>R007 The PDF Bond</h3>
+                    </a>
+                </div>
+                <button class="btn btn-link sidebar-toggle d-md-none" id="sidebarToggle">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="bi bi-house-door"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('benefit_extraction') }}">
+                            <i class="bi bi-heart-pulse"></i> Benefit Extractor
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('manage_api_keys') }}">
+                            <i class="bi bi-key"></i> API Keys
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="darkModeToggle">
+                            <i class="bi bi-moon"></i> Dark Mode
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Mobile Header -->
+            <div class="mobile-header d-md-none">
+                <button class="btn btn-link" id="mobileMenuToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="mobile-logo">
+                    <a href="/" class="text-decoration-none d-flex align-items-center">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2V8H20" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 13H15" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 17H15" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M11 9H12" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h4>PDF Scraper</h4>
+                    </a>
+                </div>
+                <div></div> <!-- Empty div for flex alignment -->
+            </div>
+
+            <div class="content">
+                <div class="content-header">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1><i class="bi bi-key"></i> API Keys Management</h1>
+                        <a href="/" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Back to Home</a>
+                    </div>
+                </div>
+
+                <!-- API Keys Section -->
+                <section id="api-keys-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Manage API Keys</h2>
+                    </div>
+                    <div class="content-body">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Perplexity API</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="perplexityApiForm">
+                                    <div class="mb-3">
+                                        <label for="perplexityApiKey" class="form-label">Perplexity API Key</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="perplexityApiKey" placeholder="Enter your Perplexity API key">
+                                            <button class="btn btn-outline-secondary" type="button" id="togglePerplexityKey">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Your API key is encrypted and stored securely.</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Save API Key
+                                    </button>
+                                </form>
+                                <div class="mt-3" id="apiKeySaveResult"></div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Add New API Integration</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="newApiKeyForm">
+                                    <div class="mb-3">
+                                        <label for="apiKeyName" class="form-label">API Name</label>
+                                        <input type="text" class="form-control" id="apiKeyName" placeholder="Enter API name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="apiKeyValue" class="form-label">API Key</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="apiKeyValue" placeholder="Enter API key">
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleNewKey">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-plus-circle"></i> Add New API
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5>Saved API Keys</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="savedApiKeys">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fix for the console errors
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            // Toggle password visibility
+            const togglePerplexityKey = document.getElementById('togglePerplexityKey');
+            const perplexityApiKey = document.getElementById('perplexityApiKey');
+            
+            if (togglePerplexityKey && perplexityApiKey) {
+                togglePerplexityKey.addEventListener('click', function() {
+                    if (perplexityApiKey.type === 'password') {
+                        perplexityApiKey.type = 'text';
+                        togglePerplexityKey.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                    } else {
+                        perplexityApiKey.type = 'password';
+                        togglePerplexityKey.innerHTML = '<i class="bi bi-eye"></i>';
+                    }
+                });
+            }
+            
+            // Toggle new API key visibility
+            const toggleNewKey = document.getElementById('toggleNewKey');
+            const apiKeyValue = document.getElementById('apiKeyValue');
+            
+            if (toggleNewKey && apiKeyValue) {
+                toggleNewKey.addEventListener('click', function() {
+                    if (apiKeyValue.type === 'password') {
+                        apiKeyValue.type = 'text';
+                        toggleNewKey.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                    } else {
+                        apiKeyValue.type = 'password';
+                        toggleNewKey.innerHTML = '<i class="bi bi-eye"></i>';
+                    }
+                });
+            }
+            
+            // Load saved API keys
+            loadSavedApiKeys();
+            
+            // Perplexity API form submission
+            const perplexityApiForm = document.getElementById('perplexityApiForm');
+            const apiKeySaveResult = document.getElementById('apiKeySaveResult');
+            
+            if (perplexityApiForm) {
+                perplexityApiForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const apiKey = perplexityApiKey.value.trim();
+                    if (!apiKey) {
+                        showAlert(apiKeySaveResult, 'Please enter an API key', 'danger');
+                        return;
+                    }
+                    
+                    saveApiKey('perplexity', apiKey)
+                        .then(data => {
+                            if (data.success) {
+                                showAlert(apiKeySaveResult, 'API key saved successfully!', 'success');
+                                loadSavedApiKeys();
+                            } else {
+                                showAlert(apiKeySaveResult, data.error || 'Failed to save API key', 'danger');
+                            }
+                        })
+                        .catch(error => {
+                            showAlert(apiKeySaveResult, 'Error: ' + error, 'danger');
+                        });
+                });
+            }
+            
+            // New API key form submission
+            const newApiKeyForm = document.getElementById('newApiKeyForm');
+            
+            if (newApiKeyForm) {
+                newApiKeyForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const keyName = document.getElementById('apiKeyName').value.trim();
+                    const keyValue = document.getElementById('apiKeyValue').value.trim();
+                    
+                    if (!keyName) {
+                        alert('Please enter an API name');
+                        return;
+                    }
+                    
+                    if (!keyValue) {
+                        alert('Please enter an API key value');
+                        return;
+                    }
+                    
+                    saveApiKey(keyName, keyValue)
+                        .then(data => {
+                            if (data.success) {
+                                alert('API key saved successfully!');
+                                document.getElementById('apiKeyName').value = '';
+                                document.getElementById('apiKeyValue').value = '';
+                                loadSavedApiKeys();
+                            } else {
+                                alert(data.error || 'Failed to save API key');
+                            }
+                        })
+                        .catch(error => {
+                            alert('Error: ' + error);
+                        });
+                });
+            }
+        });
+
+        // Save API key
+        function saveApiKey(name, value) {
+            return fetch('/api-keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    value: value
+                })
+            })
+            .then(response => response.json());
+        }
+
+        // Load saved API keys
+        function loadSavedApiKeys() {
+            const savedApiKeys = document.getElementById('savedApiKeys');
+            if (!savedApiKeys) return;
+            
+            savedApiKeys.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            fetch('/api-keys')
+                .then(response => response.json())
+                .then(data => {
+                    if (Object.keys(data).length === 0) {
+                        savedApiKeys.innerHTML = '<p class="text-center">No API keys saved yet.</p>';
+                        return;
+                    }
+                    
+                    let html = '<div class="table-responsive"><table class="table table-striped">';
+                    html += '<thead><tr><th>API Name</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody>';
+                    
+                    for (const [key, value] of Object.entries(data)) {
+                        if (key !== 'updated_at') {
+                            html += `
+                                <tr>
+                                    <td>${key}</td>
+                                    <td>${data.updated_at ? new Date(data.updated_at).toLocaleString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger delete-key" data-key="${key}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }
+                    
+                    html += '</tbody></table></div>';
+                    savedApiKeys.innerHTML = html;
+                    
+                    // Add event listeners for delete buttons
+                    document.querySelectorAll('.delete-key').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const keyName = this.getAttribute('data-key');
+                            if (confirm(`Are you sure you want to delete the ${keyName} API key?`)) {
+                                deleteApiKey(keyName);
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    savedApiKeys.innerHTML = `<p class="text-center text-danger">Error loading API keys: ${error}</p>`;
+                });
+        }
+
+        // Delete API key
+        function deleteApiKey(keyName) {
+            fetch(`/api-keys/${keyName}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('API key deleted successfully!');
+                    loadSavedApiKeys();
+                } else {
+                    alert(data.error || 'Failed to delete API key');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+
+        // Show alert message
+        function showAlert(element, message, type) {
+            element.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                const alert = element.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
