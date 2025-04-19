@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Load the logo
+    const logoImg = document.getElementById('pdf-logo');
+    if (logoImg) {
+        logoImg.src = '/static/img/pdf-logo.png';
+    }
+
     // Toggle drawer menu if it exists
     const menuToggle = document.querySelector('.menu-toggle');
     const drawer = document.querySelector('.drawer');
@@ -450,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // File listing
     function refreshFiles() {
-        fetch('/.netlify/functions/api/list-files')
+        fetch('/list-files')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -464,7 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     data = { uploads: [], outputs: [] };
                 } else if (!data.uploads) {
                     data.uploads = [];
-                } else if (!data.outputs) {
+                } 
+                if (!data.outputs) {
                     data.outputs = [];
                 }
 

@@ -10,7 +10,7 @@ deploymentTarget = "autoscale"
 run = ["sh", "-c", "python -m http.server 8080 --bind 0.0.0.0 --directory static"]
 
 [workflows]
-runButton = "Run Flask App"
+runButton = "PDF Bond Development"
 
 [[workflows.workflow]]
 name = "Project"
