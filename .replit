@@ -7,10 +7,10 @@ packages = ["glibcLocales", "openssl", "postgresql"]
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "bash netlify.sh && npx netlify-cli deploy --prod"]
+run = ["sh", "-c", "python main.py"]
 
 [workflows]
-runButton = "Deploy to Netlify"
+runButton = "PDF Bond Development"
 
 [[workflows.workflow]]
 name = "Project"
@@ -62,6 +62,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash netlify.sh"
+
+[[workflows.workflow]]
+name = "PDF Bond Development"
+author = 41693764
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 5000

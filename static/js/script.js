@@ -458,6 +458,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                // Handle missing data object
+                if (!data) {
+                    console.error("Empty response data from list-files endpoint");
+                    data = { uploads: [], outputs: [] };
+                }
+                
                 // Update uploads table
                 if (uploadsTableBody) {
                     if (!data.uploads || data.uploads.length === 0) {

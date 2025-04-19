@@ -177,18 +177,49 @@ def extract_benefits(event, headers):
 def save_api_key(event, headers):
     """Save API key to server"""
     try:
-        body = json.loads(event['body'])
-        name = body.get('name')
-        value = body.get('value')
+        # Parse form data from multipart/form-data request
+        if event.get('isBase64Encoded', False):
+            decoded_body = base64.b64decode(event['body']).decode('utf-8')
+        else:
+            decoded_body = event['body']
+            
+        # Check if it's a form submission or JSON
+        content_type = event.get('headers', {}).get('content-type', '')
+        
+        if 'application/json' in content_type:
+            body = json.loads(decoded_body)
+            name = body.get('name')
+            key = body.get('key')
+        else:
+            # Simple form parsing (this is a simplified approach)
+            form_data = parse_qs(decoded_body)
+            name = form_data.get('name', [''])[0]
+            key = form_data.get('key', [''])[0]
 
-        if not name or not value:
+        if not name or not key:
             return {
                 'statusCode': 400,
                 'headers': headers,
-                'body': json.dumps({'success': False, 'error': 'API name and value are required'})
+                'body': json.dumps({'success': False, 'error': 'API name and key are required'})
             }
+            
         api_keys = load_api_keys()
-        api_keys[name] = value
+        # Convert to list format expected by the frontend
+        if 'keys' not in api_keys:
+            api_keys['keys'] = []
+            
+        # Check if key already exists and update it
+        key_exists = False
+        for existing_key in api_keys.get('keys', []):
+            if existing_key.get('name') == name:
+                existing_key['key'] = key
+                key_exists = True
+                break
+                
+        # If key doesn't exist, add it
+        if not key_exists:
+            api_keys['keys'].append({'name': name, 'key': key})
+            
         save_api_keys(api_keys)
         return {
             'statusCode': 200,
@@ -212,12 +243,23 @@ def get_api_keys(event, headers):
     """Get saved API keys"""
     try:
         api_keys = load_api_keys()
+        # Ensure we have the right structure for the frontend
+        if 'keys' not in api_keys:
+            keys_list = []
+            # Convert old format to new format if needed
+            for name, key in api_keys.items():
+                if name != 'updated_at':
+                    keys_list.append({'name': name, 'key': key})
+            response_keys = keys_list
+        else:
+            response_keys = api_keys.get('keys', [])
+            
         return {
             'statusCode': 200,
             'headers': headers,
             'body': json.dumps({
                 'success': True,
-                'keys': api_keys
+                'keys': response_keys
             })
         }
     except Exception as e:
@@ -233,29 +275,80 @@ def get_api_keys(event, headers):
 def delete_api_key(event, headers):
     """Delete an API key"""
     try:
-        key_name = event['path'].split('/')[-1]
-        api_keys = load_api_keys()
-
-        if key_name in api_keys:
-            del api_keys[key_name]
-            save_api_keys(api_keys)
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({
-                    'success': True,
-                    'message': 'API key deleted successfully'
-                })
-            }
+        # Parse form data from multipart/form-data request
+        if event.get('isBase64Encoded', False):
+            decoded_body = base64.b64decode(event['body']).decode('utf-8')
         else:
+            decoded_body = event['body']
+        
+        # Check if it's a form submission or JSON
+        content_type = event.get('headers', {}).get('content-type', '')
+        
+        if 'application/json' in content_type:
+            body = json.loads(decoded_body)
+            name = body.get('name')
+        else:
+            # Simple form parsing
+            form_data = parse_qs(decoded_body)
+            name = form_data.get('name', [''])[0]
+        
+        if not name:
             return {
-                'statusCode': 404,
+                'statusCode': 400,
                 'headers': headers,
                 'body': json.dumps({
                     'success': False,
-                    'error': 'API key not found'
+                    'error': 'API key name is required'
                 })
             }
+
+        api_keys = load_api_keys()
+        
+        # Handle the different possible structures
+        if 'keys' in api_keys:
+            # New format
+            key_found = False
+            new_keys = []
+            for key in api_keys['keys']:
+                if key.get('name') != name:
+                    new_keys.append(key)
+                else:
+                    key_found = True
+            
+            if key_found:
+                api_keys['keys'] = new_keys
+                save_api_keys(api_keys)
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'success': True,
+                        'message': 'API key deleted successfully'
+                    })
+                }
+        else:
+            # Old format
+            if name in api_keys:
+                del api_keys[name]
+                save_api_keys(api_keys)
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'success': True,
+                        'message': 'API key deleted successfully'
+                    })
+                }
+                
+        # Key not found
+        return {
+            'statusCode': 404,
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': 'API key not found'
+            })
+        }
     except Exception as e:
         return {
             'statusCode': 500,
