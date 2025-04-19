@@ -1,61 +1,58 @@
+
 #!/bin/bash
 set -e
 
-echo "Installing Python dependencies..."
-pip install -r requirements.txt
+echo "Starting Netlify deployment..."
 
-echo "Setting up directory structure..."
+# Create necessary directories
 mkdir -p netlify/functions
 mkdir -p static/js
 mkdir -p static/css
-mkdir -p uploads
-mkdir -p downloads
-touch uploads/.gitkeep
-touch downloads/.gitkeep
+mkdir -p static/img
 
-echo "Copying files to correct locations..."
-cp -r templates/* static/ 2>/dev/null || :
-find static -name "*.html" -type f -exec sed -i 's|{{ url_for('"'"'static'"'"', filename='"'"'\([^'"'"']*\)'"'"') }}|/\1|g' {} \;
+# Install dependencies
+echo "Installing Python dependencies..."
+pip install -r requirements.txt
 
+# Copy static files
+echo "Copying static files..."
+cp -r templates/* static/
+mv static/index.html static/index.html
+mv static/api_keys.html static/api-keys.html
+mv static/benefit_extraction.html static/benefit-extraction.html
 
-# Ensure netlify functions directory exists
-mkdir -p netlify/functions
+# Make sure we have JS files
+echo "Setting up JavaScript files..."
+if [ ! -f static/js/script.js ]; then
+  cp -r attached_assets/script.js static/js/script.js
+fi
 
-# Ensure function exists (from original script)
+if [ ! -f static/js/api_keys.js ]; then
+  cp -r attached_assets/api_keys.js static/js/api_keys.js
+fi
+
+if [ ! -f static/js/benefit_extraction.js ]; then
+  cp -r attached_assets/benefit_extraction.js static/js/benefit_extraction.js
+fi
+
+# Make sure we have CSS files
+echo "Setting up CSS files..."
+if [ ! -f static/css/style.css ]; then
+  cp -r attached_assets/style.css static/css/style.css
+fi
+
+# Prepare Netlify functions
+echo "Setting up Netlify functions..."
 if [ ! -f netlify/functions/api.py ]; then
-    echo "Creating netlify/functions/api.py..."
-    cp attached_assets/api.py netlify/functions/api.py
+  cp -r attached_assets/api.py netlify/functions/api.py
 fi
 
-# Copy API function to netlify/functions (from original script)
-cp -f attached_assets/api.py netlify/functions/api.py
+# Create an empty file to ensure directories exist
+touch static/img/.gitkeep
 
-# Ensure the functions directory has proper permissions (from original script)
-chmod -R 755 netlify/functions
-
-# Create an empty api_keys.json file if it doesn't exist (from original script)
-touch api_keys.json
-chmod 644 api_keys.json
-
-# Install Node.js and npm (from original script)
-if ! command -v node &> /dev/null; then
-    echo "Node.js is required for deployment with Netlify CLI."
-    echo "Please install Node.js on your system or use the Netlify web UI for deployment."
-    echo "Visit https://nodejs.org/en/download/ for installation instructions."
-    exit 1
+# Ensure the netlify.toml file exists
+if [ ! -f netlify.toml ]; then
+  cp -r attached_assets/netlify.toml ./netlify.toml
 fi
 
-# Install Netlify CLI (from original script)
-if ! command -v netlify &> /dev/null; then
-    echo "Installing Netlify CLI..."
-    npm install netlify-cli -g
-fi
-
-
-# Deploy to Netlify (from original script)
-echo "Deploying to Netlify..."
-netlify deploy --prod
-
-echo "Deployment completed!"
-echo "Your site should now be accessible at the Netlify URL."
-echo "If you encounter any issues with menu functionality, check the browser console for errors."
+echo "Netlify deployment setup complete!"
