@@ -412,27 +412,68 @@ def create_benefit_excel(results):
     """Create an Excel file with extracted benefit information"""
     buffer = io.BytesIO()
     
-    with pd.ExcelWriter(buffer) as writer:
-        # Create a DataFrame for each PDF
-        for i, result in enumerate(results):
-            benefits = result["benefits"]
-            df = pd.DataFrame([benefits])
+    try:
+        with pd.ExcelWriter(buffer) as writer:
+            # Create a DataFrame for each PDF
+            for i, result in enumerate(results):
+                try:
+                    benefits = result["benefits"]
+                    
+                    # Sanitize benefits data to ensure it's compatible with DataFrame
+                    cleaned_benefits = {}
+                    for key, value in benefits.items():
+                        if value is None:
+                            cleaned_benefits[key] = "Not Found"
+                        else:
+                            cleaned_benefits[key] = str(value)
+                    
+                    df = pd.DataFrame([cleaned_benefits])
+                    
+                    # Add filename as first column
+                    df.insert(0, 'Filename', result["filename"])
+                    
+                    sheet_name = f'PDF {i+1}'
+                    if len(sheet_name) > 31:  # Excel has a 31 character limit for sheet names
+                        sheet_name = sheet_name[:31]
+                        
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                except Exception as e:
+                    logger.error(f"Error adding sheet for {result['filename']}: {str(e)}")
+                    # Create a simple error sheet instead
+                    error_df = pd.DataFrame([{'Error': str(e)}])
+                    error_df.insert(0, 'Filename', result["filename"])
+                    error_df.to_excel(writer, sheet_name=f'Error {i+1}'[:31], index=False)
             
-            # Add filename as first column
-            df.insert(0, 'Filename', result["filename"])
-            
-            df.to_excel(writer, sheet_name=f'PDF {i+1}', index=False)
-        
-        # Create a summary sheet
-        summary_data = []
-        for result in results:
-            row = {'Filename': result["filename"]}
-            row.update(result["benefits"])
-            summary_data.append(row)
-        
-        if summary_data:
-            summary_df = pd.DataFrame(summary_data)
-            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            # Create a summary sheet
+            try:
+                summary_data = []
+                for result in results:
+                    row = {'Filename': result["filename"]}
+                    
+                    # Sanitize benefits data before adding to summary
+                    benefits = result["benefits"]
+                    for key, value in benefits.items():
+                        if value is None:
+                            row[key] = "Not Found"
+                        else:
+                            row[key] = str(value)
+                            
+                    summary_data.append(row)
+                
+                if summary_data:
+                    summary_df = pd.DataFrame(summary_data)
+                    summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            except Exception as e:
+                logger.error(f"Error creating summary sheet: {str(e)}")
+                # Create a simple error summary instead
+                error_summary = pd.DataFrame([{'Error': f"Could not create summary: {str(e)}"}])
+                error_summary.to_excel(writer, sheet_name='Summary Error', index=False)
+    except Exception as e:
+        logger.error(f"Error creating Excel file: {str(e)}")
+        # Create a fallback Excel file with just error information
+        with pd.ExcelWriter(buffer) as writer:
+            error_df = pd.DataFrame([{'Error': f"Error creating Excel file: {str(e)}"}])
+            error_df.to_excel(writer, sheet_name='Error', index=False)
     
     buffer.seek(0)
     return buffer
