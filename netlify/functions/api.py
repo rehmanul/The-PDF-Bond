@@ -27,7 +27,7 @@ def lambda_handler(event, context):
     try:
         path = event['path']
         http_method = event['httpMethod']
-        
+
         # Add CORS headers
         headers = {
             'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ def lambda_handler(event, context):
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
         }
-        
+
         # Handle OPTIONS request (for CORS preflight)
         if http_method == 'OPTIONS':
             return {
@@ -174,26 +174,26 @@ def save_api_key(event):
         body = json.loads(event['body'])
         name = body.get('name')
         value = body.get('value')
-        
+
         if not name or not value:
             return {
                 'statusCode': 400,
                 'body': json.dumps({'success': False, 'error': 'API name and value are required'}),
                 'headers': {'Content-Type': 'application/json'}
             }
-        
+
         # Load existing keys
         api_keys = load_api_keys()
-        
+
         # Add or update the key
         from datetime import datetime
         api_keys[name] = value
         api_keys['updated_at'] = datetime.now().isoformat()
-        
+
         # Save to file
         with open('api_keys.json', 'w') as f:
             json.dump(api_keys, f)
-            
+
         return {
             'statusCode': 200,
             'body': json.dumps({'success': True}),
@@ -210,14 +210,14 @@ def delete_api_key(key_name):
     """Delete an API key"""
     try:
         api_keys = load_api_keys()
-        
+
         if key_name in api_keys:
             del api_keys[key_name]
-            
+
             # Save updated keys
             with open('api_keys.json', 'w') as f:
                 json.dump(api_keys, f)
-                
+
             return {
                 'statusCode': 200,
                 'body': json.dumps({'success': True}),
@@ -243,7 +243,7 @@ def process_upload(event):
     # 2. Save the PDF file
     # 3. Process it with the PDF processor
     # 4. Return the results
-    
+
     return {
         'statusCode': 200,
         'body': json.dumps({
@@ -264,7 +264,7 @@ def download_file(filename):
     # 1. Validate the filename
     # 2. Read the file from a storage location
     # 3. Return it as a base64-encoded response
-    
+
     return {
         'statusCode': 200,
         'body': 'This is example file content',
@@ -281,7 +281,7 @@ def extract_benefits(event):
     # 2. Save the PDF file
     # 3. Process it with the benefit extractor
     # 4. Return the results
-    
+
     return {
         'statusCode': 200,
         'body': json.dumps({

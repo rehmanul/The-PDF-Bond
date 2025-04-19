@@ -1,145 +1,142 @@
 
 document.addEventListener('DOMContentLoaded', function() {
-    const apiKeyForm = document.getElementById('apiKeyForm');
-    const apiKeysList = document.getElementById('apiKeysList');
-
-    // Load existing API keys
+    const apiForm = document.getElementById('apiForm');
+    const apiNameInput = document.getElementById('apiName');
+    const apiKeyInput = document.getElementById('apiKey');
+    const submitButton = document.querySelector('#apiForm button[type="submit"]');
+    const currentKeysContainer = document.getElementById('currentApiKeys');
+    
+    // Load saved API keys
     loadApiKeys();
-
-    if (apiKeyForm) {
-        apiKeyForm.addEventListener('submit', function(e) {
+    
+    // Handle API key submission
+    if (apiForm) {
+        apiForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
-            const apiName = document.getElementById('apiName').value;
-            const apiValue = document.getElementById('apiValue').value;
-
-            fetch('/.netlify/functions/api/api-keys', {
+            
+            if (!apiNameInput.value || !apiKeyInput.value) {
+                showAlert('Please provide both an API name and key', 'danger');
+                return;
+            }
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            
+            const formData = new FormData();
+            formData.append('name', apiNameInput.value);
+            formData.append('key', apiKeyInput.value);
+            
+            fetch('/.netlify/functions/api/save-api-key', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: apiName,
-                    value: apiValue
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Save API Key';
+                
+                if (data.success) {
+                    showAlert('API key saved successfully', 'success');
+                    apiNameInput.value = '';
+                    apiKeyInput.value = '';
+                    loadApiKeys();
+                } else {
+                    showAlert(data.error || 'Failed to save API key', 'danger');
+                }
+            })
+            .catch(error => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Save API Key';
+                showAlert('Error: ' + error, 'danger');
+            });
+        });
+    }
+    
+    // Function to load and display saved API keys
+    function loadApiKeys() {
+        if (currentKeysContainer) {
+            currentKeysContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            
+            fetch('/.netlify/functions/api/get-api-keys')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.keys && data.keys.length > 0) {
+                        let html = '<div class="list-group">';
+                        data.keys.forEach(item => {
+                            html += `
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">${item.name}</h6>
+                                        <small class="text-muted">●●●●●●●●●●●●●●●●</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-danger delete-key" data-key-name="${item.name}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        currentKeysContainer.innerHTML = html;
+                        
+                        // Add event listeners to delete buttons
+                        document.querySelectorAll('.delete-key').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const keyName = this.getAttribute('data-key-name');
+                                deleteApiKey(keyName);
+                            });
+                        });
+                    } else {
+                        currentKeysContainer.innerHTML = '<div class="alert alert-info">No API keys found</div>';
+                    }
                 })
+                .catch(error => {
+                    currentKeysContainer.innerHTML = '<div class="alert alert-danger">Failed to load API keys</div>';
+                    console.error('Error loading API keys:', error);
+                });
+        }
+    }
+    
+    // Function to delete an API key
+    function deleteApiKey(keyName) {
+        if (confirm(`Are you sure you want to delete the API key for "${keyName}"?`)) {
+            const formData = new FormData();
+            formData.append('name', keyName);
+            
+            fetch('/.netlify/functions/api/delete-api-key', {
+                method: 'POST',
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('apiValue').value = '';
-                    showAlert('success', `API key for ${apiName} saved successfully.`);
+                    showAlert(`API key for "${keyName}" deleted successfully`, 'success');
                     loadApiKeys();
                 } else {
-                    showAlert('danger', data.error || 'Failed to save API key.');
+                    showAlert(data.error || 'Failed to delete API key', 'danger');
                 }
             })
             .catch(error => {
-                showAlert('danger', 'Error: ' + error);
+                showAlert('Error: ' + error, 'danger');
             });
-        });
-    }
-
-    function loadApiKeys() {
-        fetch('/.netlify/functions/api/api-keys')
-        .then(response => response.json())
-        .then(data => {
-            displayApiKeys(data);
-        })
-        .catch(error => {
-            console.error('Error loading API keys:', error);
-            apiKeysList.innerHTML = `<div class="alert alert-danger">Failed to load API keys: ${error}</div>`;
-        });
-    }
-
-    function displayApiKeys(keys) {
-        let html = '';
-
-        // Filter out non-API key entries (like timestamps)
-        const validKeys = Object.keys(keys).filter(key => 
-            key !== 'updated_at'
-        );
-
-        if (validKeys.length === 0) {
-            html = '<p>No API keys found. Add one using the form above.</p>';
-        } else {
-            html = '<table class="table">';
-            html += '<thead><tr><th>API</th><th>Key</th><th>Actions</th></tr></thead>';
-            html += '<tbody>';
-
-            validKeys.forEach(key => {
-                const value = keys[key];
-                const maskedValue = maskApiKey(value);
-
-                html += `<tr>
-                    <td>${key}</td>
-                    <td>${maskedValue}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger delete-key" onclick="deleteApiKey('${key}')">Delete</button>
-                    </td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
         }
-
-        apiKeysList.innerHTML = html;
     }
-
-    function maskApiKey(key) {
-        if (!key) return '';
-        if (key.length <= 8) return '••••••••';
-
-        return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
-    }
-
-    function showAlert(type, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
+    
+    // Function to display alerts
+    function showAlert(message, type) {
+        const alertContainer = document.createElement('div');
+        alertContainer.className = `alert alert-${type} alert-dismissible fade show`;
+        alertContainer.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-
+        
         const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-
+        container.insertBefore(alertContainer, container.firstChild);
+        
         // Auto-dismiss after 5 seconds
         setTimeout(() => {
-            alertDiv.classList.remove('show');
-            setTimeout(() => alertDiv.remove(), 150);
+            const bsAlert = new bootstrap.Alert(alertContainer);
+            bsAlert.close();
         }, 5000);
     }
 });
-
-// Global function for deleting API keys
-function deleteApiKey(keyName) {
-    if (confirm(`Are you sure you want to delete the ${keyName} API key?`)) {
-        fetch(`/.netlify/functions/api/api-keys/${keyName}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-success alert-dismissible fade show`;
-                alertDiv.innerHTML = `
-                    API key for ${keyName} deleted successfully.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                `;
-                
-                const container = document.querySelector('.container');
-                container.insertBefore(alertDiv, container.firstChild);
-                
-                // Reload the API keys list
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                alert(data.error || 'Failed to delete API key.');
-            }
-        })
-        .catch(error => {
-            alert('Error: ' + error);
-        });
-    }
-}

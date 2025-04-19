@@ -1,118 +1,127 @@
 
 document.addEventListener('DOMContentLoaded', function() {
-    const benefitForm = document.getElementById('benefitForm');
-    const benefitResults = document.getElementById('benefitResults');
-    const benefitContent = document.getElementById('benefitContent');
-
-    if (benefitForm) {
-        benefitForm.addEventListener('submit', function(e) {
+    const uploadForm = document.getElementById('benefitUploadForm');
+    const fileInput = document.getElementById('insuranceDoc');
+    const submitButton = uploadForm ? uploadForm.querySelector('button[type="submit"]') : null;
+    const resultsContainer = document.getElementById('extractedBenefits');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const formData = new FormData(benefitForm);
-            const submitButton = benefitForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showResults('Please select a PDF file to upload', true);
+                return;
+            }
             
-            // Use the correct Netlify function endpoint
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            // Show loading state
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            }
+            
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'block';
+            }
+            
+            if (resultsContainer) {
+                resultsContainer.style.display = 'none';
+            }
+            
             fetch('/.netlify/functions/api/extract-benefits', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                submitButton.disabled = false;
-                submitButton.innerHTML = 'Extract Benefits';
+                // Reset button state
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Extract Benefits';
+                }
                 
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                
+                // Display results
                 if (data.success) {
-                    displayBenefits(data.result, data.excel_file);
+                    displayBenefits(data.benefits);
                 } else {
-                    showError(data.error || 'Unknown error occurred');
+                    showResults(data.error || 'Error processing request', true);
                 }
             })
             .catch(error => {
-                submitButton.disabled = false;
-                submitButton.innerHTML = 'Extract Benefits';
-                showError('Error processing request: ' + error.message);
-                console.error('Fetch error:', error);
+                // Reset button state
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Extract Benefits';
+                }
+                
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                
+                // Display error
+                showResults('Error processing request: ' + error, true);
             });
         });
     }
-
-    function displayBenefits(benefits, excelFile) {
-        benefitResults.style.display = 'block';
+    
+    function displayBenefits(benefits) {
+        if (!resultsContainer) return;
         
-        let html = `<div class="card mb-4">
-            <div class="card-header">
-                <h3 class="card-title">Plan Information</h3>
-            </div>
-            <div class="card-body">
-                <p><strong>Carrier:</strong> ${benefits.carrier_name || 'Unknown'}</p>
-                <p><strong>Plan Name:</strong> ${benefits.plan_name || 'Unknown'}</p>
-                <p><strong>Plan Type:</strong> ${benefits.plan_metadata ? benefits.plan_metadata.plan_type : 'Unknown'}</p>
-                <p><strong>HSA Eligible:</strong> ${benefits.plan_metadata ? benefits.plan_metadata.hsa_eligible : 'Unknown'}</p>
-            </div>
-        </div>`;
+        resultsContainer.style.display = 'block';
         
-        html += `<div class="card mb-4">
-            <div class="card-header">
-                <h3 class="card-title">Deductible & Out-of-Pocket</h3>
-            </div>
-            <div class="card-body">
-                <h4>Deductible</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Individual (In-Network):</strong> ${benefits.deductible ? benefits.deductible.individual_in_network : 'Unknown'}</p>
-                        <p><strong>Family (In-Network):</strong> ${benefits.deductible ? benefits.deductible.family_in_network : 'Unknown'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Individual (Out-of-Network):</strong> ${benefits.deductible ? benefits.deductible.individual_out_network : 'Unknown'}</p>
-                        <p><strong>Family (Out-of-Network):</strong> ${benefits.deductible ? benefits.deductible.family_out_network : 'Unknown'}</p>
-                    </div>
-                </div>
-                
-                <h4>Out-of-Pocket Maximum</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Individual (In-Network):</strong> ${benefits.out_of_pocket ? benefits.out_of_pocket.individual_in_network : 'Unknown'}</p>
-                        <p><strong>Family (In-Network):</strong> ${benefits.out_of_pocket ? benefits.out_of_pocket.family_in_network : 'Unknown'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Individual (Out-of-Network):</strong> ${benefits.out_of_pocket ? benefits.out_of_pocket.individual_out_network : 'Unknown'}</p>
-                        <p><strong>Family (Out-of-Network):</strong> ${benefits.out_of_pocket ? benefits.out_of_pocket.family_out_network : 'Unknown'}</p>
-                    </div>
-                </div>
-                
-                <h4>Coinsurance</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>In-Network:</strong> ${benefits.coinsurance ? benefits.coinsurance.in_network : 'Unknown'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Out-of-Network:</strong> ${benefits.coinsurance ? benefits.coinsurance.out_network : 'Unknown'}</p>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-        
-        if (excelFile) {
-            html += `<div class="mb-3">
-                <a href="/.netlify/functions/api/download/${excelFile}" class="btn btn-success">
-                    <i class="bi bi-download"></i> Download Complete Benefits (Excel)
-                </a>
-            </div>`;
+        if (!benefits || benefits.length === 0) {
+            showResults('No benefits found in the document', true);
+            return;
         }
         
-        benefitContent.innerHTML = html;
-        window.scrollTo(0, benefitResults.offsetTop);
+        let html = '<div class="card mb-4"><div class="card-body">';
+        
+        // Add comprehensive benefits display
+        html += '<h5 class="card-title">Extracted Benefits</h5>';
+        html += '<div class="table-responsive"><table class="table table-striped">';
+        html += '<thead><tr><th>Benefit Type</th><th>Details</th></tr></thead><tbody>';
+        
+        benefits.forEach(benefit => {
+            html += `<tr>
+                <td>${benefit.type || 'Unknown'}</td>
+                <td>
+                    <ul class="list-unstyled mb-0">`;
+            
+            for (const [key, value] of Object.entries(benefit)) {
+                if (key !== 'type' && value) {
+                    html += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</li>`;
+                }
+            }
+            
+            html += `</ul>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        html += '</div></div>';
+        
+        resultsContainer.innerHTML = html;
     }
-
-    function showError(message) {
-        benefitResults.style.display = 'block';
-        benefitContent.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+    
+    function showResults(message, isError = false) {
+        if (!resultsContainer) return;
+        
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `
+            <div class="alert alert-${isError ? 'danger' : 'success'}">
+                ${message}
+            </div>
+        `;
     }
 });
