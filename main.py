@@ -675,4 +675,4 @@ except Exception as e:
     logger.error(f"Failed to generate logo: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
