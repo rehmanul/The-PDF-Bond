@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Insurance Benefit Extractor</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">PDF Processor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/benefit-extraction">Benefit Extractor</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Health Insurance Benefit Extractor</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Upload health insurance PDF files to extract benefit information and populate an Excel template. 
+                            The extractor will analyze the PDFs for key benefit details and format them according to standardized requirements.
+                        </p>
+                        <div class="text-info mb-3">
+                            <h5>This extractor will:</h5>
+                            <ul>
+                                <li>Extract deductible information (individual/family, in-network/out-of-network)</li>
+                                <li>Find coinsurance percentages</li>
+                                <li>Extract out-of-pocket maximums</li>
+                                <li>Identify office visit copays (PCP/specialist)</li>
+                                <li>Extract prescription drug tiers and copays</li>
+                                <li>And more...</li>
+                            </ul>
+                        </div>
+                        <form id="upload-form" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="pdf-files" class="form-label">Upload PDF Files</label>
+                                <input class="form-control" type="file" id="pdf-files" name="files[]" multiple accept=".pdf">
+                                <div class="form-text">You can upload multiple PDF files at once.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="extract-button">
+                                Extract Benefits
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="result-section" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Extraction Results</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="results-container"></div>
+                        <div id="download-container" class="mt-3" style="display: none;">
+                            <h4>Download Excel Template</h4>
+                            <p>The benefit data has been formatted according to template requirements and is ready for download.</p>
+                            <a id="download-link" href="#" class="btn btn-success">
+                                <i class="bi bi-download"></i> Download Excel Template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Instructions</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>The benefit extractor follows these formatting rules:</p>
+                        <ol>
+                            <li>For HSA plans, "$" amounts will have "after deductible" appended</li>
+                            <li>Preventive care in-network is always set to "0%"</li>
+                            <li>Emergency room out-of-network values match in-network values</li>
+                            <li>Percentage values are formatted as "XX% after deductible"</li>
+                            <li>Dollar amounts are formatted as "$XX"</li>
+                            <li>Services with multiple levels show both: "Freestanding: $XX / Hospital: $YY"</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading spinner modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5>Processing PDFs...</h5>
+                    <p>This may take a few moments depending on the size and complexity of your files.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('upload-form');
+            const resultSection = document.getElementById('result-section');
+            const resultsContainer = document.getElementById('results-container');
+            const downloadContainer = document.getElementById('download-container');
+            const downloadLink = document.getElementById('download-link');
+            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('pdf-files');
+                if (fileInput.files.length === 0) {
+                    alert('Please select at least one PDF file.');
+                    return;
+                }
+
+                // Show loading modal
+                loadingModal.show();
+                
+                const formData = new FormData();
+                for (let file of fileInput.files) {
+                    formData.append('files[]', file);
+                }
+
+                fetch('/extract-benefits', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loadingModal.hide();
+                    
+                    resultSection.style.display = 'block';
+                    
+                    if (data.success) {
+                        resultsContainer.innerHTML = `
+                            <div class="alert alert-success">
+                                <h4>Success!</h4>
+                                <p>${data.message}</p>
+                            </div>
+                        `;
+                        
+                        // Set download link
+                        downloadLink.href = data.download_url;
+                        downloadContainer.style.display = 'block';
+                    } else {
+                        resultsContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h4>Error</h4>
+                                <p>${data.error}</p>
+                            </div>
+                        `;
+                        downloadContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    loadingModal.hide();
+                    resultSection.style.display = 'block';
+                    resultsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4>Error</h4>
+                            <p>An error occurred during processing: ${error.message}</p>
+                        </div>
+                    `;
+                    downloadContainer.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
