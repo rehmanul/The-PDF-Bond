@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benefit Extraction - The PDF Bond</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="my-4 text-center">
+            <h1 class="display-4">Benefit Extraction</h1>
+            <p class="lead">Extract insurance benefit information from PDF documents</p>
+            <a href="/" class="btn btn-outline-secondary mb-4">Back to Home</a>
+        </header>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Upload Insurance Document</h5>
+                        <form id="benefitForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <input class="form-control" type="file" id="pdfFile" name="pdf_file" accept=".pdf" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Extract Benefits</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="benefitResults" class="mt-4" style="display: none;">
+            <h2>Extracted Benefits</h2>
+            <div id="benefitContent"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/benefit_extraction.js"></script>
+</body>
+</html>

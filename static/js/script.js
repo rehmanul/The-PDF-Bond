@@ -4,9 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const sidebar = document.getElementById('sidebar');
-    
-=======
 
+=======
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const sidebar = document.getElementById('sidebar');
@@ -33,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const outputsTableBody = document.getElementById('outputsTableBody');
     const usePerplexity = document.getElementById('usePerplexity');
     const perplexityApiSection = document.getElementById('perplexityApiSection');
+    const uploadForm = document.getElementById('uploadForm');
+    const results = document.getElementById('results');
+    const resultContent = document.getElementById('resultContent');
 
     // Initialize Bootstrap components
     const clearDataModal = document.getElementById('clearDataModal') ? new bootstrap.Modal(document.getElementById('clearDataModal')) : null;
@@ -45,8 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 <<<<<<< HEAD
-    
+
 =======
+    
 
 >>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
     if (sidebarToggle) {
@@ -55,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 <<<<<<< HEAD
-    
+
     // Dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
     const body = document.body;
@@ -112,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (this.value === 'pypdf2') {
                     pdfplumberContent.style.display = 'none';
                     pypdf2Content.style.display = 'block';
+                }
 =======
 
     // Navigation
@@ -138,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 <<<<<<< HEAD
-    
+
     // Table selector change handler
     const tableSelector = document.getElementById('tableSelector');
     if (tableSelector) {
@@ -154,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedTable = document.getElementById(`table-${selectedIndex}`);
             if (selectedTable) {
                 selectedTable.style.display = 'block';
+            }
 =======
 
     // Dark mode toggle
@@ -776,4 +781,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 >>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(uploadForm);
+            const submitButton = uploadForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+            fetch('/.netlify/functions/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Extract Data';
+
+                if (data.success) {
+                    displayResults(data.result);
+                } else {
+                    showError(data.error);
+                }
+            })
+            .catch(error => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Extract Data';
+                showError('Error processing request: ' + error);
+            });
+        });
+    }
+
+    function displayResults(result) {
+        results.style.display = 'block';
+
+        let html = `<div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">Document Overview</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Filename:</strong> ${result.filename}</p>
+                <p><strong>Pages:</strong> ${result.pages}</p>
+                <p><strong>Text Length:</strong> ${result.text_length} characters</p>
+            </div>
+        </div>`;
+
+        if (result.text_file) {
+            html += `<div class="mb-3">
+                <a href="/.netlify/functions/api/download/${result.text_file}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Download Extracted Text
+                </a>
+            </div>`;
+        }
+
+        if (result.excel_file) {
+            html += `<div class="mb-3">
+                <a href="/.netlify/functions/api/download/${result.excel_file}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Download Tables (Excel)
+                </a>
+            </div>`;
+        }
+
+        if (result.perplexity_analysis) {
+            html += `<div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">AI Analysis</h3>
+                </div>
+                <div class="card-body">
+                    <pre class="p-3 bg-light">${JSON.stringify(result.perplexity_analysis, null, 2)}</pre>
+                </div>
+            </div>`;
+        }
+
+        resultContent.innerHTML = html;
+        window.scrollTo(0, results.offsetTop);
+    }
+
+    function showError(message) {
+        results.style.display = 'block';
+        resultContent.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+    }
 });
