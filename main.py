@@ -212,6 +212,25 @@ def extract_benefits():
                     # Extract benefits using the dedicated extractor
                     benefit_data = processor.extract_benefits()
                     
+                    # Ensure benefit_data is JSON serializable
+                    try:
+                        # Test if it's serializable
+                        json.dumps(benefit_data)
+                    except (TypeError, ValueError):
+                        # Convert non-serializable values to strings
+                        fixed_data = {}
+                        for k, v in benefit_data.items():
+                            if v is None:
+                                fixed_data[k] = "Not Found"
+                            else:
+                                try:
+                                    # Test each value
+                                    json.dumps({k: v})
+                                    fixed_data[k] = v
+                                except (TypeError, ValueError):
+                                    fixed_data[k] = str(v)
+                        benefit_data = fixed_data
+                    
                     results.append({
                         "filename": filename,
                         "benefits": benefit_data
@@ -257,11 +276,23 @@ def extract_benefits():
             except Exception as e:
                 logger.error(f"Error removing temp file {path}: {str(e)}")
         
-        return jsonify({
-            "success": True,
-            "message": f"Successfully processed {len(results)} PDF file(s)",
-            "download_url": url_for('download_file', filename=excel_filename)
-        })
+        # Final check to ensure the entire response is serializable
+        try:
+            response_data = {
+                "success": True,
+                "message": f"Successfully processed {len(results)} PDF file(s)",
+                "download_url": url_for('download_file', filename=excel_filename)
+            }
+            # Test if it's serializable
+            json.dumps(response_data)
+            return jsonify(response_data)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Error serializing response: {str(e)}")
+            return jsonify({
+                "success": True,
+                "message": f"Successfully processed {len(results)} PDF file(s), but some results may be incomplete",
+                "download_url": url_for('download_file', filename=excel_filename)
+            })
     
     except Exception as e:
         logger.exception("Error processing benefits")
