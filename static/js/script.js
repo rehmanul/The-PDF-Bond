@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Load the logo
+    const logoImg = document.getElementById('pdf-logo');
+    if (logoImg) {
+        logoImg.src = '/static/img/pdf-logo.png';
+    }
+
     // Toggle drawer menu if it exists
     const menuToggle = document.querySelector('.menu-toggle');
     const drawer = document.querySelector('.drawer');

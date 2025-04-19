@@ -511,6 +511,7 @@ def save_api_keys():
     return jsonify({"success": True})
 
 @app.route('/list-files')
+@app.route('/.netlify/functions/api/list-files')
 def list_files():
     """List all uploaded PDF files and output files"""
     uploads = []
