@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-=======
 entrypoint = "main.py"
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
 modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-<<<<<<< HEAD
 packages = ["glibcLocales", "openssl", "postgresql"]
 
 [deployment]
@@ -14,7 +10,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "Run Flask App"
 
 [[workflows.workflow]]
 name = "Project"
@@ -39,38 +35,16 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
-=======
-
-[unitTest]
-language = "python3"
-
-[gitHubImport]
-requiredFiles = [".replit", "replit.nix"]
-
-[deployment]
-run = ["sh", "-c", "python main.py"]
-deploymentTarget = "cloudrun"
-
-[workflows]
-runButton = "Run"
 
 [[workflows.workflow]]
-name = "Run"
-author = 41672362
+name = "Run Flask App"
+author = 41693764
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py --port=8080"
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
+args = "gunicorn --bind 0.0.0.0:5000 --worker-class=gthread --threads=3 main:app"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-<<<<<<< HEAD
-=======
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
