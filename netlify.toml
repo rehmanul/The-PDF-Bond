@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
 [build]
   command = "pip install -r requirements.txt"
   publish = "static"
@@ -15,8 +12,4 @@
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/api/:splat"
-<<<<<<< HEAD
   status = 200
-=======
-  status = 200
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
