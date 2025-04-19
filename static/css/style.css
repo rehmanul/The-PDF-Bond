@@ -22,6 +22,7 @@ body {
     font-family: 'Roboto', sans-serif;
     background-color: #f5f7fb;
     color: var(--dark-color);
+    padding-bottom: 2rem; /* Added from changes */
 }
 
 /* App container - holds sidebar and main content */
@@ -298,4 +299,81 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 
 body.dark-mode ::-webkit-scrollbar-thumb:hover {
     background: #888;
+}
+
+/* Drawer Menu Styles */
+.drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 250px;
+    background-color: #222;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-header {
+    padding: 1rem;
+    background-color: #333;
+    color: white;
+}
+
+.drawer-content {
+    padding: 1rem;
+}
+
+.drawer-content a {
+    display: block;
+    padding: 0.5rem 0;
+    color: white;
+    text-decoration: none;
+}
+
+.drawer-content a:hover {
+    color: #ccc;
+}
+
+.menu-toggle {
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+}
+
+/* Form styles */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+/* Selected files display */
+.selected-files-list {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.selected-file {
+    padding: 0.25rem 0;
+}
+
+/* Benefit extraction results */
+#benefitResults {
+    margin-top: 2rem;
+}
+
+.alert {
+    border-radius: 4px;
+    padding: 1rem;
 }

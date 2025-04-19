@@ -1,4 +1,45 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Toggle drawer menu if it exists
+    const menuToggle = document.querySelector('.menu-toggle');
+    const drawer = document.querySelector('.drawer');
+
+    if (menuToggle && drawer) {
+        menuToggle.addEventListener('click', function() {
+            drawer.classList.toggle('open');
+        });
+
+        // Close drawer when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!drawer.contains(event.target) && !menuToggle.contains(event.target)) {
+                drawer.classList.remove('open');
+            }
+        });
+    }
+
+    // File upload previews
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const fileList = this.files;
+            const container = document.querySelector('#selected-files') || document.createElement('div');
+
+            if (fileList.length > 0) {
+                let fileHTML = '<div class="selected-files-list mt-3">';
+                for (let i = 0; i < fileList.length; i++) {
+                    fileHTML += `<div class="selected-file">
+                        <i class="bi bi-file-earmark-pdf"></i> ${fileList[i].name}
+                    </div>`;
+                }
+                fileHTML += '</div>';
+
+                if (container) {
+                    container.innerHTML = fileHTML;
+                }
+            }
+        });
+    });
+
     // DOM Elements
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -744,5 +785,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function showError(message) {
         results.style.display = 'block';
         resultContent.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+    }
+
+    // Add Bootstrap tooltips if Bootstrap is loaded
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
 });
