@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
 from flask import Flask, jsonify
 import os
 import json
@@ -30,6 +34,7 @@ def lambda_handler(event, context):
             }
         }
     
+<<<<<<< HEAD
     # Handle API key creation
     elif path == '/api-keys' and http_method == 'POST':
         try:
@@ -105,6 +110,8 @@ def lambda_handler(event, context):
                 'headers': {'Content-Type': 'application/json'}
             }
     
+=======
+>>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
     # Default response for main page
     return {
         'statusCode': 200,

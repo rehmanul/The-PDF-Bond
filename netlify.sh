@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/bin/bash
 
 # This script helps deploy the application to Netlify
@@ -61,3 +62,30 @@ touch downloads/.gitkeep
 
 echo "Deployment preparation complete."
 echo "Deploy to Netlify using Netlify CLI or GitHub integration."
+=======
+
+#!/bin/bash
+
+# Netlify deployment script
+
+# Ensure the netlify CLI is installed
+if ! command -v netlify &> /dev/null; then
+    echo "Installing Netlify CLI..."
+    npm install netlify-cli -g
+fi
+
+# Create necessary directories
+mkdir -p netlify/functions
+
+# Create requirements.txt if it doesn't exist
+if [ ! -f requirements.txt ]; then
+    echo "Creating requirements.txt from pyproject.toml..."
+    python -c "import toml; deps = toml.load('pyproject.toml')['project']['dependencies']; print('\n'.join(deps))" > requirements.txt
+fi
+
+# Deploy to Netlify
+echo "Deploying to Netlify..."
+netlify deploy --prod
+
+echo "Deployment completed!"
+>>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
