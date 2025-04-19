@@ -4,56 +4,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Keys - The PDF Bond</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <title>API Key Management - The PDF Bond</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="my-4 text-center">
-            <h1 class="display-4">API Key Management</h1>
-            <p class="lead">Add or update API keys for enhanced analysis capabilities</p>
-            <a href="/" class="btn btn-outline-secondary mb-4">Back to Home</a>
-        </header>
-
-        <div class="row mb-4">
-            <div class="col-md-6 offset-md-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Add or Update API Key</h5>
-                        <form id="apiKeyForm">
-                            <div class="mb-3">
-                                <label for="apiName" class="form-label">API Name</label>
-                                <select class="form-select" id="apiName" name="name" required>
-                                    <option value="perplexity">Perplexity</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="apiValue" class="form-label">API Key</label>
-                                <input type="text" class="form-control" id="apiValue" name="value" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Save API Key</button>
-                        </form>
-                    </div>
-                </div>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>The PDF Bond</h3>
+                <button class="btn btn-link d-md-none" id="toggleSidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+            <div class="sidebar-menu">
+                <a href="index.html" class="menu-item">
+                    <i class="bi bi-house-door"></i> Home
+                </a>
+                <a href="benefit-extraction.html" class="menu-item">
+                    <i class="bi bi-file-medical"></i> Benefit Extraction
+                </a>
+                <a href="api-keys.html" class="menu-item active">
+                    <i class="bi bi-key"></i> API Keys
+                </a>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6 offset-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Current API Keys</h5>
+        <div class="main-content">
+            <div class="container py-4">
+                <h1 class="mb-4">API Key Management</h1>
+                <p class="lead">Add or update API keys for enhanced analysis capabilities.</p>
+
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Add or Update API Key</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="apiKeyForm">
+                                    <div class="mb-3">
+                                        <label for="apiName" class="form-label">API Name</label>
+                                        <select class="form-select" id="apiName" name="name" required>
+                                            <option value="perplexity">Perplexity</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="apiValue" class="form-label">API Key</label>
+                                        <input type="text" class="form-control" id="apiValue" name="value" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Save API Key</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="apiKeysList"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Current API Keys</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="apiKeysList">
+                                    <div class="d-flex justify-content-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/api_keys.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/api_keys.js"></script>
 </body>
 </html>

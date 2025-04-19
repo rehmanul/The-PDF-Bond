@@ -1,12 +1,45 @@
-<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar toggle for mobile
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const sidebar = document.getElementById('sidebar');
+    // Toggle drawer menu if it exists
+    const menuToggle = document.querySelector('.menu-toggle');
+    const drawer = document.querySelector('.drawer');
 
-=======
-document.addEventListener('DOMContentLoaded', function() {
+    if (menuToggle && drawer) {
+        menuToggle.addEventListener('click', function() {
+            drawer.classList.toggle('open');
+        });
+
+        // Close drawer when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!drawer.contains(event.target) && !menuToggle.contains(event.target)) {
+                drawer.classList.remove('open');
+            }
+        });
+    }
+
+    // File upload previews
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const fileList = this.files;
+            const container = document.querySelector('#selected-files') || document.createElement('div');
+
+            if (fileList.length > 0) {
+                let fileHTML = '<div class="selected-files-list mt-3">';
+                for (let i = 0; i < fileList.length; i++) {
+                    fileHTML += `<div class="selected-file">
+                        <i class="bi bi-file-earmark-pdf"></i> ${fileList[i].name}
+                    </div>`;
+                }
+                fileHTML += '</div>';
+
+                if (container) {
+                    container.innerHTML = fileHTML;
+                }
+            }
+        });
+    });
+
     // DOM Elements
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -40,83 +73,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearDataModal = document.getElementById('clearDataModal') ? new bootstrap.Modal(document.getElementById('clearDataModal')) : null;
 
     // Mobile sidebar toggle
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
     if (mobileMenuToggle) {
         mobileMenuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
     }
-<<<<<<< HEAD
 
-=======
-    
-
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function() {
             sidebar.classList.remove('active');
         });
     }
-<<<<<<< HEAD
-
-    // Dark mode toggle
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const body = document.body;
-    
-    // Check for saved theme preference or respect OS preference
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    const currentTheme = localStorage.getItem("theme");
-    
-    if (currentTheme === "light") {
-        body.setAttribute("data-bs-theme", "light");
-        if (darkModeToggle) {
-            darkModeToggle.innerHTML = '<i class="bi bi-sun"></i> Light Mode';
-        }
-    } else {
-        body.setAttribute("data-bs-theme", "dark");
-        if (darkModeToggle) {
-            darkModeToggle.innerHTML = '<i class="bi bi-moon"></i> Dark Mode';
-        }
-    }
-    
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', function() {
-            let theme;
-            if (body.getAttribute("data-bs-theme") === "dark") {
-                body.setAttribute("data-bs-theme", "light");
-                theme = "light";
-                darkModeToggle.innerHTML = '<i class="bi bi-sun"></i> Light Mode';
-            } else {
-                body.setAttribute("data-bs-theme", "dark");
-                theme = "dark";
-                darkModeToggle.innerHTML = '<i class="bi bi-moon"></i> Dark Mode';
-            }
-            localStorage.setItem("theme", theme);
-        });
-    }
-    
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    });
-    
-    // Text extraction method toggle
-    const textExtractionRadios = document.querySelectorAll('input[name="textExtraction"]');
-    const pdfplumberContent = document.getElementById('pdfplumber-content');
-    const pypdf2Content = document.getElementById('pypdf2-content');
-    
-    if (textExtractionRadios.length > 0) {
-        textExtractionRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'pdfplumber') {
-                    pdfplumberContent.style.display = 'block';
-                    pypdf2Content.style.display = 'none';
-                } else if (this.value === 'pypdf2') {
-                    pdfplumberContent.style.display = 'none';
-                    pypdf2Content.style.display = 'block';
-                }
-=======
 
     // Navigation
     if (navLinks) {
@@ -136,30 +103,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Close mobile sidebar
                 if (window.innerWidth < 768) {
                     sidebar.classList.remove('active');
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
                 }
             });
         });
     }
-<<<<<<< HEAD
-
-    // Table selector change handler
-    const tableSelector = document.getElementById('tableSelector');
-    if (tableSelector) {
-        tableSelector.addEventListener('change', function() {
-            const selectedIndex = this.value;
-            
-            // Hide all table containers
-            document.querySelectorAll('.table-container').forEach(container => {
-                container.style.display = 'none';
-            });
-            
-            // Show the selected table
-            const selectedTable = document.getElementById(`table-${selectedIndex}`);
-            if (selectedTable) {
-                selectedTable.style.display = 'block';
-            }
-=======
 
     // Dark mode toggle
     if (darkModeToggle) {
@@ -238,23 +185,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData();
         formData.append('file', file);
-        
+
         // Add Perplexity API info if enabled
         if (usePerplexity && usePerplexity.checked) {
             formData.append('use_perplexity', 'true');
-            
+
             const perplexityApiKey = document.getElementById('perplexityApiKey');
             const saveApiKey = document.getElementById('saveApiKey');
             const useSavedKey = document.getElementById('useSavedKey');
-            
+
             if (perplexityApiKey && perplexityApiKey.value) {
                 formData.append('perplexity_api_key', perplexityApiKey.value);
             }
-            
+
             if (saveApiKey && saveApiKey.checked) {
                 formData.append('save_key', 'true');
             }
-            
+
             if (useSavedKey && useSavedKey.checked) {
                 formData.append('use_saved_key', 'true');
             }
@@ -340,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (processingStatus) {
                     processingStatus.classList.remove('d-none');
                 }
-                
+
                 if (processingDetails) {
                     processingDetails.innerHTML = `
                         <div class="alert alert-danger">
@@ -363,11 +310,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const processingStatus = document.getElementById('processingStatus');
             const processingDetails = document.getElementById('processingDetails');
             const uploadProgress = document.getElementById('uploadProgress');
-            
+
             if (processingStatus) {
                 processingStatus.classList.remove('d-none');
             }
-            
+
             if (processingDetails) {
                 processingDetails.innerHTML = `
                     <div class="alert alert-danger">
@@ -376,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             }
-            
+
             if (uploadProgress) {
                 uploadProgress.classList.add('d-none');
             }
@@ -393,11 +340,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (batchProgress) {
                 batchProgress.classList.remove('d-none');
             }
-            
+
             if (batchStatus) {
                 batchStatus.innerHTML = '<p>Processing started...</p>';
             }
-            
+
             if (batchResults) {
                 batchResults.classList.add('d-none');
             }
@@ -413,10 +360,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Add Perplexity API info if enabled
             let requestBody = { directory: 'attached_assets' };
-            
+
             if (usePerplexity && usePerplexity.checked) {
                 requestBody.use_perplexity = true;
-                
+
                 const perplexityApiKey = document.getElementById('perplexityApiKey');
                 if (perplexityApiKey && perplexityApiKey.value) {
                     requestBody.perplexity_api_key = perplexityApiKey.value;
@@ -448,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Clear previous results
                 if (batchResultsBody) {
                     batchResultsBody.innerHTML = '';
-                
+
                     // Add results to table
                     data.results.forEach(result => {
                         const row = document.createElement('tr');
@@ -650,16 +597,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('includeText').checked) fileTypes.push('text');
             if (document.getElementById('includeJson').checked) fileTypes.push('json');
             if (document.getElementById('includeExcel').checked) fileTypes.push('excel');
-            
+
             if (fileTypes.length === 0) {
                 alert('Please select at least one file type to include in the ZIP');
                 return;
             }
-            
+
             // Disable button and show loading state
             createZipBtn.disabled = true;
             createZipBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating ZIP...';
-            
+
             // Create and download the ZIP file
             fetch('/create-zip', {
                 method: 'POST',
@@ -686,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
-                
+
                 // Reset button state
                 createZipBtn.disabled = false;
                 createZipBtn.innerHTML = '<i class="bi bi-download"></i> Download ZIP';
@@ -694,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error creating ZIP: ' + error.message);
-                
+
                 // Reset button state
                 createZipBtn.disabled = false;
                 createZipBtn.innerHTML = '<i class="bi bi-download"></i> Download ZIP';
@@ -722,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const useSavedKey = document.getElementById('useSavedKey');
     const perplexityApiKey = document.getElementById('perplexityApiKey');
     const togglePwdVisibility = document.getElementById('togglePwdVisibility');
-    
+
     // Toggle password visibility
     if (togglePwdVisibility && perplexityApiKey) {
         togglePwdVisibility.addEventListener('click', function() {
@@ -732,33 +679,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 perplexityApiKey.type = 'password';
                 togglePwdVisibility.innerHTML = '<i class="bi bi-eye"></i>';
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
             }
         });
     }
-    
-<<<<<<< HEAD
-    // Function to show alert
-    window.showAlert = function(container, message, type) {
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type} alert-dismissible fade show`;
-        alert.role = 'alert';
-        alert.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // Clear previous alerts
-        container.innerHTML = '';
-        container.appendChild(alert);
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 5000);
-    };
-=======
+
     // Load saved API key
     if (loadSavedKeyBtn) {
         loadSavedKeyBtn.addEventListener('click', function() {
@@ -780,7 +704,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     }
->>>>>>> d52d5154cd7a505dd585cba6a48684013ba230a6
 
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
@@ -862,5 +785,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function showError(message) {
         results.style.display = 'block';
         resultContent.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+    }
+
+    // Add Bootstrap tooltips if Bootstrap is loaded
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
 });

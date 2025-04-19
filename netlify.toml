@@ -1,20 +1,23 @@
 
 [build]
-  command = "pip install -r requirements.txt"
   publish = "static"
   functions = "netlify/functions"
 
 [dev]
-  command = "python main.py"
-  port = 5000
   publish = "static"
+  functions = "netlify/functions"
+  
+[[redirects]]
+  from = "/.netlify/functions/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pdfjs-dist"]

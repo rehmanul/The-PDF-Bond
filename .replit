@@ -7,7 +7,7 @@ packages = ["glibcLocales", "openssl", "postgresql"]
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "gunicorn --bind 0.0.0.0:5000 main:app"]
+run = ["sh", "-c", "bash netlify.sh && npx netlify-cli deploy --prod"]
 
 [workflows]
 runButton = "Run Flask App"

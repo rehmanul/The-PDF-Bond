@@ -1,49 +1,162 @@
-
-import os
 import json
+import os
+import tempfile
 import base64
 from urllib.parse import parse_qs
+import traceback
+
+def load_api_keys():
+    """Load API keys from the JSON file."""
+    if os.path.exists('api_keys.json'):
+        try:
+            with open('api_keys.json', 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_api_keys(keys):
+    """Save API keys to the JSON file."""
+    keys['updated_at'] = '' # Current timestamp will be added in production
+    with open('api_keys.json', 'w') as f:
+        json.dump(keys, f)
+    return True
 
 def lambda_handler(event, context):
-    """
-    Netlify function handler to process API requests
-    """
-    path = event['path']
-    http_method = event['httpMethod']
-    
-    # Map path to the appropriate function
-    if path == '/api-keys' and http_method == 'GET':
-        return get_api_keys()
-    elif path == '/api-keys' and http_method == 'POST':
-        return save_api_key(event)
-    elif path.startswith('/api-keys/') and http_method == 'DELETE':
-        key_name = path.split('/')[-1]
-        return delete_api_key(key_name)
-    elif path == '/upload' and http_method == 'POST':
-        return process_upload(event)
-    elif path.startswith('/download/') and http_method == 'GET':
-        filename = path.split('/')[-1]
-        return download_file(filename)
-    elif path == '/extract-benefits' and http_method == 'POST':
-        return extract_benefits(event)
-    else:
+    """Netlify function handler to process API requests."""
+    try:
+        path = event['path']
+        http_method = event['httpMethod']
+        
+        # Add CORS headers
+        headers = {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
+        }
+        
+        # Handle OPTIONS request (for CORS preflight)
+        if http_method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': ''
+            }
+
+        # Parse the path to get the API endpoint
+        if path.startswith('/.netlify/functions/api'):
+            path = path[len('/.netlify/functions/api'):]
+
         # Default response
-        return {
-            'statusCode': 200,
+        response = {
+            'statusCode': 404,
+            'body': json.dumps({'error': 'Endpoint not found'}),
+            'headers': headers
+        }
+
+        # Handle API keys endpoint
+        if path == '/api-keys' and http_method == 'GET':
+            api_keys = load_api_keys()
+            response = {
+                'statusCode': 200,
+                'body': json.dumps(api_keys),
+                'headers': headers
+            }
+        elif path == '/api-keys' and http_method == 'POST':
+            body = json.loads(event['body']) if event.get('body') else {}
+            name = body.get('name')
+            value = body.get('value')
+
+            if name and value:
+                api_keys = load_api_keys()
+                api_keys[name] = value
+                save_api_keys(api_keys)
+
+                response = {
+                    'statusCode': 200,
+                    'body': json.dumps({'success': True}),
+                    'headers': headers
+                }
+            else:
+                response = {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': 'Missing name or value'}),
+                    'headers': headers
+                }
+        elif path.startswith('/api-keys/') and http_method == 'DELETE':
+            key_name = path.split('/')[-1]
+            api_keys = load_api_keys()
+
+            if key_name in api_keys:
+                del api_keys[key_name]
+                save_api_keys(api_keys)
+
+                response = {
+                    'statusCode': 200,
+                    'body': json.dumps({'success': True}),
+                    'headers': headers
+                }
+            else:
+                response = {
+                    'statusCode': 404,
+                    'body': json.dumps({'error': 'API key not found'}),
+                    'headers': headers
+                }
+        # Upload endpoint (mock for now)
+        elif path == '/upload' and http_method == 'POST':
+            response = {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'success': True,
+                    'result': {
+                        'filename': 'example.pdf',
+                        'pages': 5,
+                        'text_length': 1250,
+                        'text_file': 'example.txt',
+                    }
+                }),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
+            }
+        # Default API info response
+        elif path == '' or path == '/':
+            response = {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'message': 'PDF Bond API',
+                    'status': 'online',
+                    'endpoints': [
+                        '/api-keys',
+                        '/upload',
+                        '/extract-benefits',
+                        '/download/{filename}'
+                    ]
+                }),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
+            }
+
+    except Exception as e:
+        traceback_str = traceback.format_exc()
+        response = {
+            'statusCode': 500,
             'body': json.dumps({
-                'message': 'PDF Scraper API',
-                'status': 'online',
-                'endpoints': [
-                    '/api-keys',
-                    '/upload',
-                    '/extract-benefits',
-                    '/download/{filename}'
-                ]
+                'error': f'Server error: {str(e)}', 
+                'trace': traceback_str
             }),
             'headers': {
                 'Content-Type': 'application/json'
             }
         }
+
+    return response
+
+# Make handler compatible with different serverless platforms
+def handler(event, context):
+    return lambda_handler(event, context)
 
 def get_api_keys():
     """Get all API keys"""
@@ -219,17 +332,3 @@ def extract_benefits(event):
         }),
         'headers': {'Content-Type': 'application/json'}
     }
-
-def load_api_keys():
-    """Load API keys from file"""
-    if os.path.exists('api_keys.json'):
-        try:
-            with open('api_keys.json', 'r') as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-# Make handler compatible with different serverless platforms
-def handler(event, context):
-    return lambda_handler(event, context)
