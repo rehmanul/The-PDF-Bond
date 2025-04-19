@@ -121,19 +121,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // Function to delete an API key
-    function deleteApiKey(keyName) {
-        if (confirm(`Are you sure you want to delete the API key for "${keyName}"?`)) {
+    function deleteApiKey(name) {
+        if (confirm(`Are you sure you want to delete the API key for "${name}"?`)) {
             const formData = new FormData();
-            formData.append('name', keyName);
+            formData.append('name', name);
 
-            fetch('/.netlify/functions/api/delete-api-key', {
-                method: 'POST',
+            fetch(`/api-keys/${name}`, { // UPDATED LINE
+                method: 'DELETE', //updated method
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert(`API key for "${keyName}" deleted successfully`, 'success');
+                    showAlert(`API key for "${name}" deleted successfully`, 'success');
                     loadApiKeys();
                 } else {
                     showAlert(data.error || 'Failed to delete API key', 'danger');
