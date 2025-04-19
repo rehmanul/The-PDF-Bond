@@ -25,73 +25,75 @@ def save_api_keys(keys):
     return True
 
 def handler(event, context):
-    try:
-        # Parse path to determine which function to call
-        path = event['path']
-        path_parts = path.split('/')
-        function_name = path_parts[-1] if len(path_parts) > 0 else ''
+    """Netlify Functions handler"""
 
-        # Set CORS headers
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    # Set CORS headers
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+    }
+
+    # Handle preflight requests
+    if event['httpMethod'] == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': ''
         }
 
-        # Handle OPTIONS request (CORS preflight)
-        if event['httpMethod'] == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': ''
-            }
+    # Extract path
+    path = event['path']
+    if path.startswith('/.netlify/functions/api'):
+        path = path[len('/.netlify/functions/api'):]
 
-        # Route to appropriate function
-        if function_name == 'extract-benefits':
-            return extract_benefits(event, headers)
-        elif function_name == 'save-api-key':
-            return save_api_key(event, headers)
-        elif function_name == 'get-api-keys':
-            return get_api_keys(event, headers)
-        elif function_name == 'delete-api-key':
-            return delete_api_key(event, headers)
-        elif function_name == 'upload':
-            return process_upload(event, headers)
-        elif function_name == 'download':
-            filename = path_parts[-2] if len(path_parts) > 1 else ''
-            return download_file(filename, headers)
-
-        elif path == '' or path == '/':
-            response = {
-                'statusCode': 200,
-                'body': json.dumps({
-                    'message': 'PDF Bond API',
-                    'status': 'online',
-                    'endpoints': [
-                        '/save-api-key',
-                        '/get-api-keys',
-                        '/delete-api-key',
-                        '/upload',
-                        '/extract-benefits',
-                        '/download/{filename}'
-                    ]
-                }),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
+    # Route to appropriate function
+    if path == 'extract-benefits':
+        return extract_benefits(event, headers)
+    elif path == 'save-api-key':
+        return save_api_key(event, headers)
+    elif path == 'get-api-keys':
+        return get_api_keys(event, headers)
+    elif path == 'delete-api-key':
+        return delete_api_key(event, headers)
+    elif path == 'upload':
+        return process_upload(event, headers)
+    elif path.startswith('download/'):
+        filename = path[len('download/'):]
+        return download_file(filename, headers)
+    elif path == 'list-files':
+        return list_files(event, headers)
+    elif path == '' or path == '/':
+        response = {
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'PDF Bond API',
+                'status': 'online',
+                'endpoints': [
+                    '/save-api-key',
+                    '/get-api-keys',
+                    '/delete-api-key',
+                    '/upload',
+                    '/extract-benefits',
+                    '/download/{filename}',
+                    '/list-files'
+                ]
+            }),
+            'headers': {
+                'Content-Type': 'application/json'
             }
-            return response
-
-        else:
-            # Default response for unhandled routes
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({
-                    'success': False,
-                    'error': f'Route not found: {path}'
-                })
-            }
+        }
+        return response
+    else:
+        # Default response for unhandled routes
+        return {
+            'statusCode': 404,
+            'headers': headers,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Route not found: {path}'
+            })
+        }
 
     except Exception as e:
         # Log the full error for debugging
@@ -182,10 +184,10 @@ def save_api_key(event, headers):
             decoded_body = base64.b64decode(event['body']).decode('utf-8')
         else:
             decoded_body = event['body']
-            
+
         # Check if it's a form submission or JSON
         content_type = event.get('headers', {}).get('content-type', '')
-        
+
         if 'application/json' in content_type:
             body = json.loads(decoded_body)
             name = body.get('name')
@@ -202,12 +204,12 @@ def save_api_key(event, headers):
                 'headers': headers,
                 'body': json.dumps({'success': False, 'error': 'API name and key are required'})
             }
-            
+
         api_keys = load_api_keys()
         # Convert to list format expected by the frontend
         if 'keys' not in api_keys:
             api_keys['keys'] = []
-            
+
         # Check if key already exists and update it
         key_exists = False
         for existing_key in api_keys.get('keys', []):
@@ -215,11 +217,11 @@ def save_api_key(event, headers):
                 existing_key['key'] = key
                 key_exists = True
                 break
-                
+
         # If key doesn't exist, add it
         if not key_exists:
             api_keys['keys'].append({'name': name, 'key': key})
-            
+
         save_api_keys(api_keys)
         return {
             'statusCode': 200,
@@ -253,11 +255,11 @@ def get_api_keys(event, headers):
             response_keys = keys_list
         else:
             response_keys = api_keys.get('keys', [])
-            
+
         # Add Content-Type header for JSON response
         response_headers = headers.copy()
         response_headers['Content-Type'] = 'application/json'
-            
+
         return {
             'statusCode': 200,
             'headers': response_headers,
@@ -284,10 +286,10 @@ def delete_api_key(event, headers):
             decoded_body = base64.b64decode(event['body']).decode('utf-8')
         else:
             decoded_body = event['body']
-        
+
         # Check if it's a form submission or JSON
         content_type = event.get('headers', {}).get('content-type', '')
-        
+
         if 'application/json' in content_type:
             body = json.loads(decoded_body)
             name = body.get('name')
@@ -295,7 +297,7 @@ def delete_api_key(event, headers):
             # Simple form parsing
             form_data = parse_qs(decoded_body)
             name = form_data.get('name', [''])[0]
-        
+
         if not name:
             return {
                 'statusCode': 400,
@@ -307,7 +309,7 @@ def delete_api_key(event, headers):
             }
 
         api_keys = load_api_keys()
-        
+
         # Handle the different possible structures
         if 'keys' in api_keys:
             # New format
@@ -318,7 +320,7 @@ def delete_api_key(event, headers):
                     new_keys.append(key)
                 else:
                     key_found = True
-            
+
             if key_found:
                 api_keys['keys'] = new_keys
                 save_api_keys(api_keys)
@@ -343,7 +345,7 @@ def delete_api_key(event, headers):
                         'message': 'API key deleted successfully'
                     })
                 }
-                
+
         # Key not found
         return {
             'statusCode': 404,
@@ -400,3 +402,22 @@ def download_file(filename, headers):
             'Content-Disposition': f'attachment; filename="{filename}"'
         }
     }
+
+def list_files(event, headers):
+    """List files in the uploads directory"""
+    try:
+        uploads_dir = 'uploads' # Assumed uploads directory
+        if not os.path.exists(uploads_dir):
+            os.makedirs(uploads_dir)
+        files = [f for f in os.listdir(uploads_dir) if os.path.isfile(os.path.join(uploads_dir, f))]
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps({'files': files})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': f'Error listing files: {str(e)}'})
+        }

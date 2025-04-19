@@ -56,18 +56,18 @@ def manage_api_keys():
         else:
             # Render HTML template
             return render_template('api_keys.html')
-    
+
     elif request.method == 'POST':
         data = request.get_json()
         name = data.get('name')
         value = data.get('value')
-        
+
         if not name or not value:
             return jsonify({"success": False, "error": "API name and value are required"})
-        
+
         save_api_key(name, value)
         return jsonify({"success": True})
-    
+
     return jsonify({"success": False, "error": "Method not allowed"})
 
 @app.route('/api-keys/<key_name>', methods=['DELETE'])
@@ -84,43 +84,43 @@ def upload_file():
         # Check if the post request has the file part
         if 'pdf_file' not in request.files:
             return jsonify({"success": False, "error": "No file part"})
-        
+
         file = request.files['pdf_file']
-        
+
         # If user does not select file, browser also submits an empty part without filename
         if file.filename == '':
             return jsonify({"success": False, "error": "No selected file"})
-        
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            
+
             # Process the PDF file using the unified processor
             try:
                 # Create processor instance
                 processor = PDFProcessor(file_path)
-                
+
                 # Extract all PDF data
                 processor.extract_all()
-                
+
                 # Save extracted text to a file for download
                 text_filename = filename.replace('.pdf', '_extracted.txt')
                 processor.save_text_to_file(os.path.join(app.config['DOWNLOAD_FOLDER'], text_filename))
-                
+
                 # If tables were found, save to Excel
                 if processor.tables:
                     excel_filename = filename.replace('.pdf', '_tables.xlsx')
                     excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                     processor.save_tables_to_excel(excel_path)
-                
+
                 # Check if we should analyze with Perplexity
                 use_perplexity = request.form.get('use_perplexity', 'false').lower() == 'true'
-                
+
                 if use_perplexity:
                     api_keys = load_api_keys()
                     perplexity_key = api_keys.get('perplexity')
-                    
+
                     if perplexity_key:
                         try:
                             perplexity_analysis = processor.analyze_with_perplexity(perplexity_key)
@@ -130,29 +130,29 @@ def upload_file():
                         perplexity_analysis = {"error": "No Perplexity API key found in settings"}
                 else:
                     perplexity_analysis = None
-                
+
                 # Return results as JSON
                 result = processor.to_json()
                 result["perplexity_analysis"] = perplexity_analysis
                 result["text_file"] = text_filename
-                
+
                 if processor.tables:
                     result["excel_file"] = excel_filename
-                
+
                 return jsonify({
                     "success": True,
                     "result": result
                 })
-                
+
             except Exception as e:
                 logger.error(f"Error processing PDF: {str(e)}")
                 return jsonify({
                     "success": False,
                     "error": f"Error processing PDF: {str(e)}"
                 })
-        
+
         return jsonify({"success": False, "error": "Invalid file format"})
-    
+
     except Exception as e:
         logger.error(f"Upload error: {str(e)}")
         return jsonify({"success": False, "error": f"Upload error: {str(e)}"})
@@ -162,31 +162,31 @@ def view_results(filename):
     try:
         if not filename or not os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
             return redirect(url_for('index'))
-        
+
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         processor = PDFProcessor(file_path)
-        
+
         # Extract basic info
         result = processor.extract_all()
-        
+
         # Check if any Perplexity analysis was performed
         perplexity_analysis = None
         api_keys = load_api_keys()
         perplexity_key = api_keys.get('perplexity')
-        
+
         # Only show the Perplexity button if there's an API key
         has_perplexity_key = perplexity_key is not None
-        
+
         # Create download file links
         text_filename = filename.replace('.pdf', '_extracted.txt')
         text_file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], text_filename)
-        
+
         excel_filename = filename.replace('.pdf', '_tables.xlsx')
         excel_file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
-        
+
         has_text_file = os.path.exists(text_file_path)
         has_excel_file = os.path.exists(excel_file_path)
-        
+
         return render_template(
             'results.html',
             filename=filename,
@@ -198,7 +198,7 @@ def view_results(filename):
             has_excel_file=has_excel_file,
             excel_filename=excel_filename if has_excel_file else None
         )
-        
+
     except Exception as e:
         logger.error(f"Error displaying results: {str(e)}")
         return redirect(url_for('index'))
@@ -217,23 +217,23 @@ def extract_benefits():
         # Check if the post request has the file part
         if 'pdf_file' not in request.files:
             return jsonify({"success": False, "error": "No file part"})
-        
+
         file = request.files['pdf_file']
-        
+
         # If user does not select file, browser also submits an empty part without filename
         if file.filename == '':
             return jsonify({"success": False, "error": "No selected file"})
-        
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            
+
             # Create processor and extract PDF content
             processor = PDFProcessor(file_path)
             text_content = processor.extract_text()[1]  # Use pdfplumber text (index 1)
             tables = processor.extract_tables()
-            
+
             # Extract benefit information
             try:
                 benefit_info = extract_benefit_information(text_content, tables)
@@ -241,13 +241,13 @@ def extract_benefits():
                 logger.error(f"Error in primary benefit extraction: {str(e)}")
                 # Try simplified extraction
                 benefit_info = simple_extract_benefit_information(text_content)
-            
+
             # Create an Excel file with the extracted data
             try:
                 excel_filename = f"benefits_{uuid.uuid4().hex[:8]}.xlsx"
                 excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                 create_benefit_excel({"results": [benefit_info]}, excel_path)
-                
+
                 return jsonify({
                     "success": True,
                     "result": benefit_info,
@@ -260,9 +260,9 @@ def extract_benefits():
                     "result": benefit_info,
                     "error": f"Could not create Excel file: {str(e)}"
                 })
-        
+
         return jsonify({"success": False, "error": "Invalid file format"})
-    
+
     except Exception as e:
         logger.error(f"Benefit extraction error: {str(e)}")
         return jsonify({"success": False, "error": f"Benefit extraction error: {str(e)}"})
@@ -275,36 +275,36 @@ def extract_benefit_information(text_content, tables):
     try:
         # Import here to avoid circular imports
         from utils.benefit_extractor import BenefitExtractor
-        
+
         # Create a temporary file to pass to the BenefitExtractor
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_path = temp_file.name
-        
+
         # Since we don't actually have the PDF content, we'll create a stub
         # and the BenefitExtractor will use our text and tables directly
         with open(temp_path, 'wb') as f:
             f.write(b'PDF stub for benefit extraction')
-        
+
         # Initialize the extractor with our temporary file
         extractor = BenefitExtractor(temp_path)
-        
+
         # Override the extracted text and tables with our data
         extractor.text = text_content
         if tables:
             extractor.tables = tables
-        
+
         # Extract benefits
         extractor._extract_benefits()
-        
+
         # Get formatted results
         benefits = extractor.get_formatted_benefits()
-        
+
         # Clean up the temporary file
         try:
             os.unlink(temp_path)
         except:
             pass
-            
+
         return benefits
     except Exception as e:
         logger.error(f"Error in benefit extraction: {str(e)}")
@@ -356,7 +356,7 @@ def simple_extract_benefit_information(text_content):
             "hsa_eligible": "Yes" if "HSA" in text_content else "No"
         }
     }
-    
+
     return benefits
 
 def find_benefit(text, keywords):
@@ -369,18 +369,18 @@ def find_benefit(text, keywords):
             start = max(0, idx - 10)
             end = min(len(text), idx + len(keyword) + 50)
             context = text[start:end]
-            
+
             # Look for dollar amounts
             import re
             dollar_matches = re.findall(r'\$\s*[\d,]+(?:\.\d{2})?', context)
             if dollar_matches:
                 return dollar_matches[0]
-                
+
             # Try to find numeric values
             numeric_matches = re.findall(r'\b\d+(?:\.\d{2})?\b', context)
             if numeric_matches:
                 return f"${numeric_matches[0]}"
-    
+
     return "Not found"
 
 def find_percentage(text, keywords):
@@ -392,23 +392,23 @@ def find_percentage(text, keywords):
             start = max(0, idx - 10)
             end = min(len(text), idx + len(keyword) + 30)
             context = text[start:end]
-            
+
             # Look for percentage values
             import re
             percentage_matches = re.findall(r'\d+\s*%', context)
             if percentage_matches:
                 return percentage_matches[0]
-    
+
     return "Not found"
 
 def create_benefit_excel(results, output_path):
     """Create an Excel file with extracted benefit information"""
     try:
         import pandas as pd
-        
+
         # Create a writer for Excel
         writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
-        
+
         # Create sheets for each section
         sheet_data = {
             "Plan Information": [],
@@ -417,13 +417,13 @@ def create_benefit_excel(results, output_path):
             "Urgent & Emergency": [],
             "Prescription Drugs": []
         }
-        
+
         # Process each result
         for i, result in enumerate(results["results"]):
             carrier = result.get("carrier_name", "Unknown")
             plan = result.get("plan_name", "Unknown")
             plan_label = f"{carrier} - {plan}"
-            
+
             # Plan Information
             sheet_data["Plan Information"].append({
                 "Plan": plan_label,
@@ -432,7 +432,7 @@ def create_benefit_excel(results, output_path):
                 "Plan Type": result.get("plan_metadata", {}).get("plan_type", "Unknown"),
                 "HSA Eligible": result.get("plan_metadata", {}).get("hsa_eligible", "Unknown")
             })
-            
+
             # Deductible & OOP
             sheet_data["Deductible & OOP"].append({
                 "Plan": plan_label,
@@ -447,7 +447,7 @@ def create_benefit_excel(results, output_path):
                 "Coinsurance (In-Network)": result.get("coinsurance", {}).get("in_network", "Unknown"),
                 "Coinsurance (Out-of-Network)": result.get("coinsurance", {}).get("out_network", "Unknown")
             })
-            
+
             # Office Visits
             sheet_data["Office Visits"].append({
                 "Plan": plan_label,
@@ -456,7 +456,7 @@ def create_benefit_excel(results, output_path):
                 "Primary Care (Out-of-Network)": result.get("office_visits", {}).get("primary_care_out_network", "Unknown"),
                 "Specialist (Out-of-Network)": result.get("office_visits", {}).get("specialist_out_network", "Unknown")
             })
-            
+
             # Urgent & Emergency
             sheet_data["Urgent & Emergency"].append({
                 "Plan": plan_label,
@@ -465,7 +465,7 @@ def create_benefit_excel(results, output_path):
                 "Urgent Care (Out-of-Network)": result.get("urgent_emergency", {}).get("urgent_care_out_network", "Unknown"),
                 "Emergency Room (Out-of-Network)": result.get("urgent_emergency", {}).get("emergency_room_out_network", "Unknown")
             })
-            
+
             # Prescription Drugs
             sheet_data["Prescription Drugs"].append({
                 "Plan": plan_label,
@@ -474,18 +474,18 @@ def create_benefit_excel(results, output_path):
                 "Tier 3": result.get("rx", {}).get("tier3", "Unknown"),
                 "Tier 4": result.get("rx", {}).get("tier4", "Unknown")
             })
-        
+
         # Write each sheet
         for sheet_name, data in sheet_data.items():
             df = pd.DataFrame(data)
             df.to_excel(writer, sheet_name=sheet_name, index=False)
-            
+
             # Auto-adjust column width
             worksheet = writer.sheets[sheet_name]
             for i, col in enumerate(df.columns):
                 column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
                 worksheet.set_column(i, i, column_width)
-        
+
         # Save the Excel file
         writer.close()
         return output_path
@@ -503,10 +503,10 @@ def save_api_keys():
     data = request.get_json()
     name = data.get('name')
     value = data.get('value')
-    
+
     if not name or not value:
         return jsonify({"success": False, "error": "API name and value are required"})
-    
+
     save_api_key(name, value)
     return jsonify({"success": True})
 
@@ -516,7 +516,7 @@ def list_files():
     """List all uploaded PDF files and output files"""
     uploads = []
     outputs = []
-    
+
     # Get uploaded PDF files
     if os.path.exists(app.config['UPLOAD_FOLDER']):
         for filename in os.listdir(app.config['UPLOAD_FOLDER']):
@@ -525,13 +525,13 @@ def list_files():
                 size = os.path.getsize(file_path)
                 modified = datetime.fromtimestamp(os.path.getmtime(file_path))
                 uploads.append(filename)
-    
+
     # Get output files
     if os.path.exists(app.config['DOWNLOAD_FOLDER']):
         for filename in os.listdir(app.config['DOWNLOAD_FOLDER']):
             if filename.lower().endswith(('.txt', '.xlsx', '.json')):
                 outputs.append(filename)
-    
+
     return jsonify({
         'uploads': uploads,
         'outputs': outputs
@@ -560,11 +560,11 @@ def create_zip():
     """Create a zip file of all results"""
     try:
         import zipfile
-        
+
         # Create a zip filename with timestamp
         zip_filename = f"pdf_scraper_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
         zip_path = os.path.join(app.config['DOWNLOAD_FOLDER'], zip_filename)
-        
+
         # Create the zip file
         with zipfile.ZipFile(zip_path, 'w') as zipf:
             # Add files from upload folder
@@ -573,14 +573,14 @@ def create_zip():
                     if file.lower().endswith('.pdf'):
                         file_path = os.path.join(folder, file)
                         zipf.write(file_path, os.path.join('uploads', file))
-            
+
             # Add files from download folder
             for folder, subfolders, files in os.walk(app.config['DOWNLOAD_FOLDER']):
                 for file in files:
                     if file != zip_filename:  # Don't include the zip file itself
                         file_path = os.path.join(folder, file)
                         zipf.write(file_path, os.path.join('downloads', file))
-        
+
         return jsonify({
             "success": True,
             "filename": zip_filename
@@ -614,20 +614,20 @@ def generate_default_logo():
     """Generate a simple PDF logo if none exists"""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
-    
+
     # Check if the file already exists
     logo_path = 'static/img/generated-icon.png'
     if os.path.exists(logo_path):
         return
-    
+
     # Ensure directory exists
     os.makedirs(os.path.dirname(logo_path), exist_ok=True)
-    
+
     # Create a blank image with white background
     width, height = 512, 512
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    
+
     # Draw a rounded rectangle for the PDF icon
     def rounded_rectangle(xy, r, fill=None, outline=None):
         x1, y1, x2, y2 = xy
@@ -637,34 +637,34 @@ def generate_default_logo():
         draw.pieslice((x2-2*r, y1, x2, y1+2*r), 270, 0, fill=fill, outline=outline)
         draw.pieslice((x1, y2-2*r, x1+2*r, y2), 90, 180, fill=fill, outline=outline)
         draw.pieslice((x2-2*r, y2-2*r, x2, y2), 0, 90, fill=fill, outline=outline)
-        
+
     # Draw PDF icon
     icon_margin = 50
     rounded_rectangle([(icon_margin, icon_margin), (width-icon_margin, height-icon_margin)],
                      r=20, fill=(200, 0, 0), outline=None)
-    
+
     # Add text "PDF"
     try:
         # Try to find a system font
         font = ImageFont.truetype("Arial", 120)
     except:
         font = ImageFont.load_default()
-    
+
     text = "PDF"
     text_color = (255, 255, 255)
     draw.text((width//2, height//2), text, fill=text_color, font=font, anchor="mm")
-    
+
     # Add magnifying glass
     glass_center = (width - icon_margin - 40, icon_margin + 40)
     glass_radius = 30
     glass_handle_length = 40
     glass_handle_width = 12
-    
+
     # Circle for the glass
     draw.ellipse((glass_center[0]-glass_radius, glass_center[1]-glass_radius,
                  glass_center[0]+glass_radius, glass_center[1]+glass_radius),
                 outline=(0, 0, 0), fill=None, width=8)
-    
+
     # Handle for the glass
     handle_angle = 45  # degrees
     handle_rad = np.radians(handle_angle)
@@ -673,7 +673,7 @@ def generate_default_logo():
     handle_end = (handle_start[0] + glass_handle_length * np.cos(handle_rad),
                  handle_start[1] + glass_handle_length * np.sin(handle_rad))
     draw.line([handle_start, handle_end], fill=(0, 0, 0), width=8)
-    
+
     # Save the image
     img.save(logo_path)
     # Also save a copy at the root for easy deployment

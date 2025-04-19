@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // File listing
     function refreshFiles() {
-        fetch('/.netlify/functions/api/list-files')
+        fetch('/list-files')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -470,7 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     data = { uploads: [], outputs: [] };
                 } else if (!data.uploads) {
                     data.uploads = [];
-                } else if (!data.outputs) {
+                } 
+                if (!data.outputs) {
                     data.outputs = [];
                 }
 
