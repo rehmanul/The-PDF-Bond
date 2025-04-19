@@ -1,23 +1,18 @@
 
 [build]
+  command = "chmod +x netlify.sh && ./netlify.sh"
   publish = "static"
   functions = "netlify/functions"
 
-[dev]
-  publish = "static"
-  functions = "netlify/functions"
-  
-[[redirects]]
-  from = "/.netlify/functions/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["pdfjs-dist"]
+[[redirects]]
+  from = "/.netlify/functions/api/*"
+  to = "/.netlify/functions/api"
+  status = 200

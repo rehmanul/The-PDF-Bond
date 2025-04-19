@@ -450,12 +450,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // File listing
     function refreshFiles() {
-        fetch('/list-files')
+        fetch('/.netlify/functions/api/list-files')
             .then(response => response.json())
             .then(data => {
                 // Update uploads table
                 if (uploadsTableBody) {
-                    if (data.uploads.length === 0) {
+                    if (!data.uploads || data.uploads.length === 0) {
                         uploadsTableBody.innerHTML = '<tr><td colspan="2" class="text-center">No files uploaded</td></tr>';
                     } else {
                         uploadsTableBody.innerHTML = '';
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Update outputs table
                 if (outputsTableBody) {
-                    if (data.outputs.length === 0) {
+                    if (!data.outputs || data.outputs.length === 0) {
                         outputsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">No output files</td></tr>';
                     } else {
                         outputsTableBody.innerHTML = '';
