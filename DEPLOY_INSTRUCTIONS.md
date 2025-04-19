@@ -4,18 +4,18 @@ We've prepared a complete copy of the project for you to download and deploy. He
 
 ## 1. Download the Project Archive
 
-In the workspace, you'll find a file called `pdf-bond-export.tar.gz`. Download this file to your local computer.
+In the workspace, you'll find a file called `pdf-bond-export-updated.tar.gz`. Download this file to your local computer.
 
 ## 2. Extract the Archive
 
 On Linux/Mac:
 ```bash
-tar -xzf pdf-bond-export.tar.gz
-cd pdf-bond-export
+tar -xzf pdf-bond-export-updated.tar.gz
+cd pdf-bond-export-updated
 ```
 
 On Windows (using 7-Zip or similar):
-1. Right-click on the file and choose "Extract here" or "Extract to pdf-bond-export\"
+1. Right-click on the file and choose "Extract here" or "Extract to pdf-bond-export-updated\"
 2. Navigate to the extracted folder
 
 ## 3. Initialize Git and Push to GitHub
