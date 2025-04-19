@@ -512,19 +512,29 @@ def save_api_keys():
 
 @app.route('/list-files')
 def list_files():
-    """List all uploaded PDF files"""
-    files = []
-    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-        if filename.lower().endswith('.pdf'):
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            size = os.path.getsize(file_path)
-            modified = datetime.fromtimestamp(os.path.getmtime(file_path))
-            files.append({
-                'name': filename,
-                'size': size,
-                'modified': modified.strftime('%Y-%m-%d %H:%M:%S')
-            })
-    return jsonify(files)
+    """List all uploaded PDF files and output files"""
+    uploads = []
+    outputs = []
+    
+    # Get uploaded PDF files
+    if os.path.exists(app.config['UPLOAD_FOLDER']):
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            if filename.lower().endswith('.pdf'):
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                size = os.path.getsize(file_path)
+                modified = datetime.fromtimestamp(os.path.getmtime(file_path))
+                uploads.append(filename)
+    
+    # Get output files
+    if os.path.exists(app.config['DOWNLOAD_FOLDER']):
+        for filename in os.listdir(app.config['DOWNLOAD_FOLDER']):
+            if filename.lower().endswith(('.txt', '.xlsx', '.json')):
+                outputs.append(filename)
+    
+    return jsonify({
+        'uploads': uploads,
+        'outputs': outputs
+    })
 
 @app.route('/clear-data', methods=['POST'])
 def clear_data():

@@ -462,8 +462,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!data) {
                     console.error("Empty response data from list-files endpoint");
                     data = { uploads: [], outputs: [] };
+                } else if (!data.uploads) {
+                    data.uploads = [];
+                } else if (!data.outputs) {
+                    data.outputs = [];
                 }
-                
+
                 // Update uploads table
                 if (uploadsTableBody) {
                     if (!data.uploads || !Array.isArray(data.uploads) || data.uploads.length === 0) {
