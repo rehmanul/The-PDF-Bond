@@ -261,11 +261,15 @@ def extract_benefits():
                 excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                 
                 # Create Excel with benefits data
-                if use_mass_format and template_path:
+                if template_path:
                     # Copy template first if it exists
                     shutil.copy2(template_path, excel_path)
                 
-                create_benefit_excel(benefit_info, excel_path)
+                # Use the mass upload formatter for special formatting if enabled
+                if use_mass_format:
+                    format_benefit_excel(benefit_info, excel_path)
+                else:
+                    create_benefit_excel(benefit_info, excel_path)
 
                 return jsonify({
                     "success": True,
@@ -294,11 +298,15 @@ def extract_benefits():
                     excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                     
                     # Create Excel with benefits data
-                    if use_mass_format and template_path:
+                    if template_path:
                         # Copy template first if it exists
                         shutil.copy2(template_path, excel_path)
                     
-                    create_benefit_excel(benefit_info, excel_path)
+                    # Use the mass upload formatter for special formatting if enabled
+                    if use_mass_format:
+                        format_benefit_excel(benefit_info, excel_path)
+                    else:
+                        create_benefit_excel(benefit_info, excel_path)
                     
                     return jsonify({
                         "success": True,
@@ -519,8 +527,8 @@ def extract_benefits_ai():
                 if template_path:
                     shutil.copy2(template_path, excel_path)
                 
-                # Create Excel with the special formatting
-                create_benefit_excel(benefits, excel_path)
+                # Create Excel with the special formatting tailored for mass upload
+                format_benefit_excel(benefits, excel_path)
                 
                 return jsonify({
                     "success": True,
@@ -544,8 +552,8 @@ def extract_benefits_ai():
                 if template_path:
                     shutil.copy2(template_path, excel_path)
                 
-                # Create Excel with the special formatting
-                create_benefit_excel(benefits, excel_path)
+                # Create Excel with the special formatting tailored for mass upload
+                format_benefit_excel(benefits, excel_path)
                 
                 return jsonify({
                     "success": True,
