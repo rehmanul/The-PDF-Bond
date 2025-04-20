@@ -261,12 +261,11 @@ def extract_benefits():
                 excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                 
                 # Create Excel with benefits data
-                if use_mass_format:
-                    # Use the mass upload formatter for standardized formatting
-                    format_benefit_excel(benefit_info, excel_path)
-                else:
-                    # Use the standard excel creator
-                    create_benefit_excel(benefit_info, excel_path)
+                if use_mass_format and template_path:
+                    # Copy template first if it exists
+                    shutil.copy2(template_path, excel_path)
+                
+                create_benefit_excel(benefit_info, excel_path)
 
                 return jsonify({
                     "success": True,
@@ -295,12 +294,11 @@ def extract_benefits():
                     excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                     
                     # Create Excel with benefits data
-                    if use_mass_format:
-                        # Use the mass upload formatter for standardized formatting
-                        format_benefit_excel(benefit_info, excel_path)
-                    else:
-                        # Use the standard excel creator
-                        create_benefit_excel(benefit_info, excel_path)
+                    if use_mass_format and template_path:
+                        # Copy template first if it exists
+                        shutil.copy2(template_path, excel_path)
+                    
+                    create_benefit_excel(benefit_info, excel_path)
                     
                     return jsonify({
                         "success": True,
