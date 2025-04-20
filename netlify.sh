@@ -11,7 +11,16 @@ mkdir -p static/img
 
 # Install dependencies
 echo "Installing Python dependencies..."
-pip install -r requirements.txt
+# Check if requirements.txt exists in the root directory
+if [ -f "requirements.txt" ]; then
+  pip install -r requirements.txt
+# If not, check if it exists in attached_assets directory
+elif [ -f "attached_assets/requirements.txt" ]; then
+  pip install -r attached_assets/requirements.txt
+else
+  echo "Error: requirements.txt file not found in root or attached_assets directory"
+  exit 1
+fi
 
 # Copy static files
 echo "Copying static files..."

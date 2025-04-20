@@ -1,0 +1,63 @@
+~/workspace$ 
+~/workspace$ # Resolve any merge conflicts if they occur
+~/workspace$ # Then commit the merged changes
+~/workspace$ git add .
+~/workspace$ git commit -m "Merge remote changes and fix JSON serialization issues"
+On branch main
+nothing to commit, working tree clean
+~/workspace$ 
+~/workspace$ # Force push the changes to the remote repository
+~/workspace$ git push -f origin main~
+fatal: invalid refspec 'main~'
+~/workspace$ git config pull.rebase false  # merge (recommended for most cases)
+~/workspace$ git config pull.rebase true   # rebase
+~/workspace$ git pull origin main
+From https://github.com/rehmanul/The-PDF-Bond
+ * branch            main       -> FETCH_HEAD
+warning: Cannot merge binary files: attached_assets/generated-icon.png (HEAD vs. fa1c4bc (Initial commit))
+Auto-merging attached_assets/generated-icon.png
+CONFLICT (add/add): Merge conflict in attached_assets/generated-icon.png
+Auto-merging attached_assets/main.py
+CONFLICT (add/add): Merge conflict in attached_assets/main.py
+Auto-merging attached_assets/netlify.sh
+CONFLICT (add/add): Merge conflict in attached_assets/netlify.sh
+Auto-merging attached_assets/netlify.toml
+CONFLICT (add/add): Merge conflict in attached_assets/netlify.toml
+Auto-merging attached_assets/pyproject.toml
+CONFLICT (add/add): Merge conflict in attached_assets/pyproject.toml
+Auto-merging attached_assets/requirements.txt
+CONFLICT (add/add): Merge conflict in attached_assets/requirements.txt
+Auto-merging attached_assets/uv.lock
+CONFLICT (add/add): Merge conflict in attached_assets/uv.lock
+warning: Cannot merge binary files: generated-icon.png (HEAD vs. fa1c4bc (Initial commit))
+Auto-merging generated-icon.png
+CONFLICT (add/add): Merge conflict in generated-icon.png
+error: could not apply fa1c4bc... Initial commit
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
+Could not apply fa1c4bc... Initial commit
+~/workspace$ git add .
+git commit -m "Merge remote changes"
+[detached HEAD 930e1f4] Merge remote changes
+ 15 files changed, 1566 insertions(+)
+ create mode 100644 attached_assets/.gitignore
+ create mode 100644 attached_assets/.replit
+ create mode 100644 attached_assets/CNDK_BENEFIT_SUMMARY.pdf
+ create mode 100644 attached_assets/DEPLOY_INSTRUCTIONS.md
+ create mode 100644 attached_assets/NETLIFY.md
+ create mode 100644 attached_assets/Pasted--workspace-200-Configure-Git-with-your-credentials-Configure-Git-with-your-credentialsbash-1745146637018.txt
+ create mode 100644 attached_assets/PdfMasterScraper.zip
+ create mode 100644 attached_assets/README.md
+ create mode 100644 attached_assets/The-PDF-Bond-main.zip
+~/workspace$ git push origin main
+To https://github.com/rehmanul/The-PDF-Bond.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/rehmanul/The-PDF-Bond.git'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace$ 
