@@ -1,136 +1,88 @@
-{% extends 'layout.html' %}
 
-{% block title %}API Keys - The PDF Bond{% endblock %}
-
-{% block additional_head %}
-<style>
-    .api-key-value {
-        font-family: monospace;
-    }
-    .api-keys-container {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="api-keys-container">
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-light">
-            <h4 class="mb-0"><i class="fas fa-key text-info me-2"></i> API Keys Management</h4>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys - The PDF Bond</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">The PDF Bond</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/benefit-extraction.html">Insurance Benefits</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/api-keys.html">API Keys</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-        <div class="card-body">
-            <p class="lead mb-4">
-                Manage your API keys for enhanced functionality like AI-powered analysis
-            </p>
-            
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Note:</strong> API keys are stored locally and are used to access third-party services.
-            </div>
-            
-            <div class="mb-4">
-                <h5 class="mb-3">Add New API Key</h5>
-                <form id="addApiKeyForm">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label for="keyName" class="form-label">API Name</label>
-                            <select class="form-select" id="keyName" required>
-                                <option value="" selected disabled>Select API</option>
-                                <option value="perplexity">Perplexity AI</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="keyValue" class="form-label">API Key</label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="keyValue" required>
-                                <button class="btn btn-outline-secondary" type="button" id="toggleKeyVisibility">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-plus-circle me-2"></i> Add
-                            </button>
-                        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-light">
+                        <h4 class="mb-0"><i class="fas fa-key text-warning me-2"></i> API Key Management</h4>
                     </div>
-                </form>
-            </div>
-            
-            <hr>
-            
-            <div class="mt-4">
-                <h5 class="mb-3">Your API Keys</h5>
-                <div class="alert alert-warning" id="noKeysMessage" style="display: none;">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    You don't have any API keys stored yet.
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-striped" id="apiKeysTable" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th>API Name</th>
-                                <th>Key</th>
-                                <th>Added</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="apiKeysList"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="mt-5">
-                <h5 class="mb-3">API Key Information</h5>
-                <div class="accordion" id="apiInfoAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="perplexityHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#perplexityInfo" aria-expanded="false" aria-controls="perplexityInfo">
-                                Perplexity AI
-                            </button>
-                        </h2>
-                        <div id="perplexityInfo" class="accordion-collapse collapse" aria-labelledby="perplexityHeading" data-bs-parent="#apiInfoAccordion">
-                            <div class="accordion-body">
-                                <p>Perplexity AI provides advanced document analysis capabilities. With this API key, the application can:</p>
-                                <ul>
-                                    <li>Extract key insights from document text</li>
-                                    <li>Answer specific questions about document content</li>
-                                    <li>Summarize large documents</li>
-                                </ul>
-                                <p>To get a Perplexity API key:</p>
-                                <ol>
-                                    <li>Visit <a href="https://www.perplexity.ai/" target="_blank">Perplexity.ai</a></li>
-                                    <li>Create an account or log in</li>
-                                    <li>Navigate to API settings</li>
-                                    <li>Generate a new API key</li>
-                                </ol>
-                                <div class="alert alert-primary">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Perplexity AI charges may apply based on your usage and account type.
+                    <div class="card-body">
+                        <p class="lead text-center mb-4">Add your API keys to enable advanced features</p>
+                        
+                        <div class="mb-4">
+                            <h5><i class="fas fa-brain text-primary me-2"></i> AI Services</h5>
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Perplexity API</h6>
+                                    <p class="card-text text-muted">Required for AI-powered document analysis and benefit extraction</p>
+                                    
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="perplexityApiKey" placeholder="Enter your Perplexity API key">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="perplexityApiKey">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-primary save-api-key" type="button" data-name="perplexity">Save</button>
+                                    </div>
+                                    <div class="form-text">
+                                        <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener noreferrer">Get a Perplexity API key <i class="fas fa-external-link-alt"></i></a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <div id="statusMessages"></div>
+                        
+                        <div class="text-center mt-4">
+                            <a href="/" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Home
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<div class="alert alert-success position-fixed bottom-0 end-0 m-3" id="successAlert" style="display: none;">
-    <i class="fas fa-check-circle me-2"></i>
-    <span id="successMessage"></span>
-</div>
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">&copy; 2025 The PDF Bond | Powered by AI & PDF Analysis Tools</span>
+        </div>
+    </footer>
 
-<div class="alert alert-danger position-fixed bottom-0 end-0 m-3" id="errorAlert" style="display: none;">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    <span id="errorMessage"></span>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="/js/api_keys.js"></script>
-{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api_keys.js"></script>
+</body>
+</html>

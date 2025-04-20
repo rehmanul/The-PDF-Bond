@@ -1,71 +1,125 @@
-/* Custom CSS for The PDF Bond application */
 
-/* General styling */
+/* General Styles */
 body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
 .container {
+    max-width: 1200px;
+}
+
+main {
     flex: 1;
 }
 
-footer {
-    margin-top: auto;
+/* Navigation */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
-/* File upload styling */
+/* Card Styles */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+/* Drop Area Styles */
 .drop-area {
-    border: 2px dashed var(--bs-info);
+    border: 2px dashed #007bff;
     border-radius: 8px;
     padding: 40px;
     text-align: center;
     transition: all 0.3s;
+    background-color: rgba(0, 123, 255, 0.03);
 }
 
 .drop-area:hover, .drop-area.drag-over {
-    background-color: rgba(13, 202, 240, 0.1);
-    border-color: var(--bs-info);
+    background-color: rgba(0, 123, 255, 0.1);
+    border-color: #0056b3;
 }
 
-/* Results section styling */
-.result-section .nav-tabs {
-    border-bottom-color: var(--bs-gray-700);
+/* Button Styles */
+.btn {
+    border-radius: 5px;
+    font-weight: 500;
+    padding: 8px 20px;
+    transition: all 0.2s;
 }
 
-.result-section .nav-tabs .nav-link.active {
-    background-color: var(--bs-gray-900);
-    border-color: var(--bs-gray-700);
-    color: var(--bs-light);
+.btn-primary {
+    background-color: #007bff;
 }
 
-.result-section .tab-content {
-    background-color: var(--bs-gray-900);
-    border: 1px solid var(--bs-gray-700);
-    border-top: none;
+.btn-primary:hover {
+    background-color: #0056b3;
 }
 
-/* Card styling */
-.card {
-    border-color: var(--bs-gray-700);
-    background-color: var(--bs-gray-900);
+.btn-success {
+    background-color: #28a745;
 }
 
-.card-header {
-    border-bottom-color: var(--bs-gray-700);
+.btn-success:hover {
+    background-color: #218838;
 }
 
-/* Table styling */
-.table {
-    color: var(--bs-light);
+/* Processing Spinner */
+.processing-spinner {
+    padding: 40px;
+    text-align: center;
 }
 
-.table-striped > tbody > tr:nth-of-type(odd) > * {
-    color: var(--bs-light);
+/* Results Section */
+.result-section {
+    margin-top: 30px;
 }
 
-/* Benefits display */
+.result-card {
+    margin-bottom: 20px;
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    font-size: 0.9rem;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .drop-area {
+        padding: 20px;
+    }
+    
+    h1, h2 {
+        font-size: 1.8rem;
+    }
+}
+
+/* API Keys Page */
+.toggle-password {
+    cursor: pointer;
+}
+
+.alert {
+    border-radius: 5px;
+}
+
+/* Benefit Extraction Page */
 .benefit-card {
     transition: all 0.2s;
 }
@@ -73,68 +127,4 @@ footer {
 .benefit-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.benefit-value {
-    font-family: monospace;
-    font-size: 1.2rem;
-}
-
-/* API keys */
-.api-key-value {
-    font-family: monospace;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.fade-in {
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bs-gray-800);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--bs-gray-600);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-gray-500);
-}
-
-/* Alert styling */
-.alert-notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1050;
-    min-width: 300px;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .drop-area {
-        padding: 20px;
-    }
-    
-    .card-title {
-        font-size: 1.25rem;
-    }
-    
-    .lead {
-        font-size: 1rem;
-    }
 }

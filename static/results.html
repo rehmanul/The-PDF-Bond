@@ -1,316 +1,228 @@
-{% extends 'layout.html' %}
-
-{% block title %}PDF Results - {{ filename }}{% endblock %}
-
-{% block additional_head %}
-<style>
-    .tab-content {
-        max-height: 500px;
-        overflow-y: auto;
-    }
-    pre {
-        white-space: pre-wrap;
-    }
-    .table-container {
-        overflow-x: auto;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
-        <h4 class="mb-0"><i class="fas fa-file-pdf text-info me-2"></i> Results for {{ filename }}</h4>
-        <a href="/" class="btn btn-outline-light btn-sm">
-            <i class="fas fa-arrow-left me-2"></i> Back to Upload
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Document Information</h5>
-                        <table class="table">
-                            <tbody>
-                                <tr>
-                                    <th>Filename</th>
-                                    <td>{{ filename }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Pages</th>
-                                    <td>{{ result.page_count }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Title</th>
-                                    <td>{{ result.metadata.title }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Author</th>
-                                    <td>{{ result.metadata.author }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Download Options</h5>
-                        <div class="d-flex flex-column gap-2">
-                            {% if has_text_file %}
-                            <a href="/download/{{ text_filename }}" class="btn btn-outline-info">
-                                <i class="fas fa-file-alt me-2"></i> Download Text Content
-                            </a>
-                            {% endif %}
-                            
-                            {% if has_excel_file %}
-                            <a href="/download/{{ excel_filename }}" class="btn btn-outline-success">
-                                <i class="fas fa-file-excel me-2"></i> Download Tables (Excel)
-                            </a>
-                            {% endif %}
-                            
-                            {% if has_perplexity_key %}
-                            <button type="button" class="btn btn-outline-primary" id="analyzeWithPerplexity">
-                                <i class="fas fa-brain me-2"></i> Analyze with Perplexity AI
-                            </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraction Results - The PDF Bond</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">The PDF Bond</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/benefit-extraction.html">Insurance Benefits</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api-keys.html">API Keys</a>
+                    </li>
+                </ul>
             </div>
         </div>
+    </nav>
 
-        <ul class="nav nav-tabs" id="resultTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="true">
-                    <i class="fas fa-file-alt me-2"></i> Text
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tables" type="button" role="tab" aria-controls="tables" aria-selected="false">
-                    <i class="fas fa-table me-2"></i> Tables
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#metadata" type="button" role="tab" aria-controls="metadata" aria-selected="false">
-                    <i class="fas fa-info-circle me-2"></i> Metadata
-                </button>
-            </li>
-            <li class="nav-item d-none" role="presentation" id="analysis-tab-item">
-                <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button" role="tab" aria-controls="analysis" aria-selected="false">
-                    <i class="fas fa-brain me-2"></i> AI Analysis
-                </button>
-            </li>
-        </ul>
-        
-        <div class="tab-content p-3 border border-top-0 rounded-bottom">
-            <div class="tab-pane fade show active" id="text" role="tabpanel" aria-labelledby="text-tab">
-                <h5 class="mb-3">Extracted Text</h5>
-                <div class="bg-dark p-3 rounded">
-                    <pre class="text-light">{{ result.text }}</pre>
-                </div>
-            </div>
-            
-            <div class="tab-pane fade" id="tables" role="tabpanel" aria-labelledby="tables-tab">
-                <h5 class="mb-3">Extracted Tables</h5>
-                {% if result.tables and result.tables|length > 0 %}
-                    {% for table in result.tables %}
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h6 class="mb-0">Table #{{ table.table_number }} (Page {{ table.page }})</h6>
+    <main class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-light">
+                        <h4 class="mb-0"><i class="fas fa-file-alt text-success me-2"></i> Extraction Results</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success mb-4">
+                            <i class="fas fa-check-circle me-2"></i> Content extracted successfully!
                         </div>
-                        <div class="card-body">
-                            <div class="table-container">
-                                <table class="table table-striped table-sm">
-                                    {% for row in table.data %}
-                                    {% if loop.first %}
-                                    <thead>
-                                        <tr>
-                                            {% for cell in row %}
-                                            <th>{{ cell }}</th>
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% else %}
-                                        <tr>
-                                            {% for cell in row %}
-                                            <td>{{ cell }}</td>
-                                            {% endfor %}
-                                        </tr>
-                                    {% endif %}
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+
+                        <ul class="nav nav-tabs mb-4" id="resultTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab">Text Content</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tables" type="button" role="tab">Tables</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button" role="tab">AI Analysis</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="resultTabsContent">
+                            <div class="tab-pane fade show active" id="text" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Extracted Text</h5>
+                                            <button class="btn btn-sm btn-outline-primary" id="copyTextBtn">
+                                                <i class="fas fa-copy me-1"></i> Copy
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="extracted-text p-3" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa; border-radius: 5px;">
+                                            <p>This is a sample PDF document for The PDF Bond application. It demonstrates the text extraction capabilities.</p>
+
+                                            <h3>Section 1: Introduction</h3>
+                                            <p>The PDF Bond is a powerful tool designed to extract and analyze content from PDF documents. This sample demonstrates some of the formatting that can be extracted.</p>
+
+                                            <h3>Section 2: Features</h3>
+                                            <p>Our application provides the following features:</p>
+                                            <ul>
+                                                <li>Text extraction from PDFs</li>
+                                                <li>Table recognition and extraction</li>
+                                                <li>Insurance benefit parsing</li>
+                                                <li>AI-powered document analysis</li>
+                                                <li>Excel export functionality</li>
+                                            </ul>
+
+                                            <h3>Section 3: Technical Details</h3>
+                                            <p>The PDF Bond uses a combination of technologies including PyPDF2, pdfplumber, and advanced AI models to provide accurate extraction results.</p>
+
+                                            <p>For more information, please visit our documentation.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tables" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Extracted Tables</h5>
+                                            <button class="btn btn-sm btn-success" id="downloadExcelBtn">
+                                                <i class="fas fa-file-excel me-1"></i> Download Excel
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Feature</th>
+                                                        <th>Description</th>
+                                                        <th>Availability</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Text Extraction</td>
+                                                        <td>Extract text content from PDF files</td>
+                                                        <td>All plans</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Table Extraction</td>
+                                                        <td>Extract tabular data from PDF files</td>
+                                                        <td>All plans</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Insurance Benefit Extraction</td>
+                                                        <td>Extract insurance plan details</td>
+                                                        <td>Premium plan</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>AI Analysis</td>
+                                                        <td>AI-powered document analysis</td>
+                                                        <td>Premium plan</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Excel Export</td>
+                                                        <td>Export data to Excel format</td>
+                                                        <td>All plans</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="mt-4">
+                                            <h6>Additional Tables</h6>
+                                            <p class="text-muted">No additional tables found in the document.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="analysis" role="tabpanel">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">AI Analysis</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-robot me-2"></i> AI-powered analysis provides insights about the document content.
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <h6>Document Type</h6>
+                                            <p>This appears to be a product information document describing a software application called "The PDF Bond".</p>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <h6>Key Points</h6>
+                                            <ul>
+                                                <li>The PDF Bond is a PDF processing application</li>
+                                                <li>It offers various text and table extraction features</li>
+                                                <li>It has specialized capabilities for insurance documents</li>
+                                                <li>Premium plans include AI-powered analysis</li>
+                                            </ul>
+                                        </div>
+
+                                        <div>
+                                            <h6>Recommendations</h6>
+                                            <p>This document would be useful for product documentation or marketing materials. Consider expanding the technical details section with more specific information about the technologies used.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i> No tables detected in this document.
-                    </div>
-                {% endif %}
-            </div>
-            
-            <div class="tab-pane fade" id="metadata" role="tabpanel" aria-labelledby="metadata-tab">
-                <h5 class="mb-3">Document Metadata</h5>
-                <table class="table table-striped">
-                    <tbody>
-                        {% for key, value in result.metadata.items() %}
-                        <tr>
-                            <th>{{ key|title }}</th>
-                            <td>{{ value }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="tab-pane fade" id="analysis" role="tabpanel" aria-labelledby="analysis-tab">
-                <h5 class="mb-3">AI Analysis</h5>
-                <div id="analysisContent" class="p-3 border rounded">
-                    <div class="d-flex justify-content-center align-items-center" id="analysisSpinner">
-                        <div class="spinner-border text-info me-3" role="status">
-                            <span class="visually-hidden">Loading analysis...</span>
+
+                        <div class="text-center mt-4">
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i> Back to Home
+                            </a>
+                            <a href="/" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-redo me-2"></i> Process Another PDF
+                            </a>
                         </div>
-                        <p class="mb-0">Analyzing document with Perplexity AI...</p>
                     </div>
-                    <div id="analysisResults" style="display: none;"></div>
-                    <div class="alert alert-danger" id="analysisError" style="display: none;"></div>
-                </div>
-                
-                <div class="mt-4">
-                    <form id="customQueryForm">
-                        <div class="mb-3">
-                            <label for="customQuery" class="form-label">Ask a specific question about this document:</label>
-                            <input type="text" class="form-control" id="customQuery" placeholder="E.g., What are the main topics covered in this document?">
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search me-2"></i> Analyze
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const analyzeButton = document.getElementById('analyzeWithPerplexity');
-    const analysisTabItem = document.getElementById('analysis-tab-item');
-    const analysisTab = document.getElementById('analysis-tab');
-    const analysisSpinner = document.getElementById('analysisSpinner');
-    const analysisResults = document.getElementById('analysisResults');
-    const analysisError = document.getElementById('analysisError');
-    const customQueryForm = document.getElementById('customQueryForm');
-    
-    if (analyzeButton) {
-        analyzeButton.addEventListener('click', function() {
-            // Show the analysis tab
-            analysisTabItem.classList.remove('d-none');
-            analysisTab.click();
-            
-            // Show loading spinner
-            analysisSpinner.style.display = 'flex';
-            analysisResults.style.display = 'none';
-            analysisError.style.display = 'none';
-            
-            // Call analysis API
-            fetch('/analyze-with-perplexity', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    filename: '{{ filename }}'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                analysisSpinner.style.display = 'none';
-                
-                if (data.success) {
-                    analysisResults.style.display = 'block';
-                    analysisResults.innerHTML = formatAnalysisContent(data.analysis);
-                } else {
-                    analysisError.style.display = 'block';
-                    analysisError.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> ${data.error}`;
-                }
-            })
-            .catch(error => {
-                analysisSpinner.style.display = 'none';
-                analysisError.style.display = 'block';
-                analysisError.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> An error occurred: ${error.message}`;
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">&copy; 2025 The PDF Bond | Powered by AI & PDF Analysis Tools</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Copy text button
+            document.getElementById('copyTextBtn').addEventListener('click', function() {
+                const text = document.querySelector('.extracted-text').innerText;
+                navigator.clipboard.writeText(text).then(function() {
+                    this.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+                    setTimeout(() => {
+                        this.innerHTML = '<i class="fas fa-copy me-1"></i> Copy';
+                    }, 2000);
+                }.bind(this));
+            });
+
+            // Download Excel button
+            document.getElementById('downloadExcelBtn').addEventListener('click', function() {
+                alert('In the full version, this would download the extracted tables as an Excel file. This feature is limited in the static demo.');
             });
         });
-    }
-    
-    if (customQueryForm) {
-        customQueryForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const customQuery = document.getElementById('customQuery').value;
-            if (!customQuery) return;
-            
-            // Show loading spinner
-            analysisSpinner.style.display = 'flex';
-            analysisResults.style.display = 'none';
-            analysisError.style.display = 'none';
-            
-            // Call analysis API with custom query
-            fetch('/analyze-with-perplexity', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    filename: '{{ filename }}',
-                    query: customQuery
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                analysisSpinner.style.display = 'none';
-                
-                if (data.success) {
-                    analysisResults.style.display = 'block';
-                    analysisResults.innerHTML = formatAnalysisContent(data.analysis);
-                } else {
-                    analysisError.style.display = 'block';
-                    analysisError.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> ${data.error}`;
-                }
-            })
-            .catch(error => {
-                analysisSpinner.style.display = 'none';
-                analysisError.style.display = 'block';
-                analysisError.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> An error occurred: ${error.message}`;
-            });
-        });
-    }
-    
-    // Format analysis content with citations
-    function formatAnalysisContent(analysis) {
-        if (analysis.error) {
-            return `<div class="alert alert-danger">${analysis.error}</div>`;
-        }
-        
-        let html = `<div class="analysis-content">${analysis.content.replace(/\n/g, '<br>')}</div>`;
-        
-        // Add citations if available
-        if (analysis.citations && analysis.citations.length > 0) {
-            html += `<hr><h6>Sources:</h6><ul class="citations-list">`;
-            analysis.citations.forEach(citation => {
-                html += `<li><a href="${citation}" target="_blank">${citation}</a></li>`;
-            });
-            html += `</ul>`;
-        }
-        
-        return html;
-    }
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

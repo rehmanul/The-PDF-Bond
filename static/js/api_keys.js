@@ -1,202 +1,95 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const addApiKeyForm = document.getElementById('addApiKeyForm');
-    const keyName = document.getElementById('keyName');
-    const keyValue = document.getElementById('keyValue');
-    const toggleKeyVisibility = document.getElementById('toggleKeyVisibility');
-    const apiKeysTable = document.getElementById('apiKeysTable');
-    const apiKeysList = document.getElementById('apiKeysList');
-    const noKeysMessage = document.getElementById('noKeysMessage');
-    const successAlert = document.getElementById('successAlert');
-    const successMessage = document.getElementById('successMessage');
-    const errorAlert = document.getElementById('errorAlert');
-    const errorMessage = document.getElementById('errorMessage');
-    
-    // Load API keys when the page loads
+    // Initialize variables
+    const statusMessages = document.getElementById('statusMessages');
+    const apiKeyInputs = document.querySelectorAll('input[type="password"]');
+    const saveButtons = document.querySelectorAll('.save-api-key');
+    const toggleButtons = document.querySelectorAll('.toggle-password');
+
+    // Load saved API keys
     loadApiKeys();
-    
+
     // Toggle password visibility
-    if (toggleKeyVisibility) {
-        toggleKeyVisibility.addEventListener('click', () => {
-            if (keyValue.type === 'password') {
-                keyValue.type = 'text';
-                toggleKeyVisibility.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const inputField = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+
+            if (inputField.type === 'password') {
+                inputField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
             } else {
-                keyValue.type = 'password';
-                toggleKeyVisibility.innerHTML = '<i class="fas fa-eye"></i>';
+                inputField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
             }
         });
-    }
-    
-    // Form submission
-    if (addApiKeyForm) {
-        addApiKeyForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const name = keyName.value;
-            const value = keyValue.value;
-            
-            if (!name || !value) {
-                showError('API name and value are required');
-                return;
+    });
+
+    // Save API key button handlers
+    saveButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const apiName = this.getAttribute('data-name');
+            let inputId;
+
+            switch(apiName) {
+                case 'perplexity':
+                    inputId = 'perplexityApiKey';
+                    break;
+                default:
+                    inputId = '';
             }
-            
-            addApiKey(name, value);
-        });
-    }
-    
-    // Functions
-    function loadApiKeys() {
-        fetch('/api-keys', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Clear previous entries
-            apiKeysList.innerHTML = '';
-            
-            // Filter out non-key entries like updated_at
-            const keys = Object.entries(data)
-                .filter(([key]) => key !== 'updated_at')
-                .sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
-            
-            if (keys.length === 0) {
-                apiKeysTable.style.display = 'none';
-                noKeysMessage.style.display = 'block';
-            } else {
-                apiKeysTable.style.display = 'table';
-                noKeysMessage.style.display = 'none';
-                
-                // Add each key to the table
-                keys.forEach(([name, value]) => {
-                    const row = document.createElement('tr');
-                    
-                    // API Name
-                    const nameCell = document.createElement('td');
-                    const displayName = formatApiName(name);
-                    nameCell.textContent = displayName;
-                    
-                    // API Key (masked)
-                    const valueCell = document.createElement('td');
-                    const maskedValue = maskApiKey(value);
-                    valueCell.innerHTML = `<span class="api-key-value">${maskedValue}</span>`;
-                    
-                    // Updated date
-                    const dateCell = document.createElement('td');
-                    const updateDate = data.updated_at ? new Date(data.updated_at) : new Date();
-                    dateCell.textContent = updateDate.toLocaleDateString();
-                    
-                    // Actions
-                    const actionsCell = document.createElement('td');
-                    const deleteButton = document.createElement('button');
-                    deleteButton.className = 'btn btn-sm btn-outline-danger';
-                    deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
-                    deleteButton.addEventListener('click', () => {
-                        deleteApiKey(name);
-                    });
-                    
-                    actionsCell.appendChild(deleteButton);
-                    
-                    // Add cells to row
-                    row.appendChild(nameCell);
-                    row.appendChild(valueCell);
-                    row.appendChild(dateCell);
-                    row.appendChild(actionsCell);
-                    
-                    // Add row to table
-                    apiKeysList.appendChild(row);
-                });
-            }
-        })
-        .catch(error => {
-            showError('Error loading API keys: ' + error.message);
-        });
-    }
-    
-    function addApiKey(name, value) {
-        fetch('/api-keys', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name: name,
-                value: value
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showSuccess('API key added successfully');
-                addApiKeyForm.reset();
-                loadApiKeys();
-            } else {
-                showError(data.error || 'Failed to add API key');
-            }
-        })
-        .catch(error => {
-            showError('Error adding API key: ' + error.message);
-        });
-    }
-    
-    function deleteApiKey(name) {
-        if (confirm(`Are you sure you want to delete the ${formatApiName(name)} API key?`)) {
-            fetch(`/api-keys/${name}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showSuccess('API key deleted successfully');
-                    loadApiKeys();
+
+            if (inputId) {
+                const apiValue = document.getElementById(inputId).value.trim();
+                if (apiValue) {
+                    saveApiKey(apiName, apiValue);
                 } else {
-                    showError(data.error || 'Failed to delete API key');
+                    showMessage('error', 'API key cannot be empty');
                 }
-            })
-            .catch(error => {
-                showError('Error deleting API key: ' + error.message);
-            });
+            }
+        });
+    });
+
+    // Function to load API keys from localStorage (in a real app, this would come from the server)
+    function loadApiKeys() {
+        // This is a simplified version that works with localStorage for the static demo
+        const perplexityKey = localStorage.getItem('perplexity_api_key');
+
+        if (perplexityKey) {
+            document.getElementById('perplexityApiKey').value = perplexityKey;
         }
     }
-    
-    function showSuccess(message) {
-        successMessage.textContent = message;
-        successAlert.style.display = 'block';
-        
-        setTimeout(() => {
-            successAlert.style.display = 'none';
-        }, 3000);
+
+    // Function to save API key to localStorage (in a real app, this would send to the server)
+    function saveApiKey(name, value) {
+        // This is a simplified version that works with localStorage for the static demo
+        localStorage.setItem(`${name}_api_key`, value);
+        showMessage('success', `${name.charAt(0).toUpperCase() + name.slice(1)} API key saved successfully`);
     }
-    
-    function showError(message) {
-        errorMessage.textContent = message;
-        errorAlert.style.display = 'block';
-        
+
+    // Function to display status messages
+    function showMessage(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+        statusMessages.innerHTML = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <i class="fas ${icon} me-2"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+
+        // Auto-dismiss after 5 seconds
         setTimeout(() => {
-            errorAlert.style.display = 'none';
+            const alert = statusMessages.querySelector('.alert');
+            if (alert) {
+                alert.classList.remove('show');
+                setTimeout(() => {
+                    statusMessages.innerHTML = '';
+                }, 150);
+            }
         }, 5000);
-    }
-    
-    function maskApiKey(key) {
-        if (!key) return '';
-        
-        const firstFour = key.substring(0, 4);
-        const lastFour = key.substring(key.length - 4);
-        const middle = '*'.repeat(Math.min(key.length - 8, 8));
-        
-        return `${firstFour}${middle}${lastFour}`;
-    }
-    
-    function formatApiName(name) {
-        // Format API name for display (e.g., "perplexity" -> "Perplexity AI")
-        switch (name.toLowerCase()) {
-            case 'perplexity':
-                return 'Perplexity AI';
-            default:
-                return name.charAt(0).toUpperCase() + name.slice(1);
-        }
     }
 });
