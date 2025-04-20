@@ -1,0 +1,136 @@
+{% extends 'layout.html' %}
+
+{% block title %}API Keys - The PDF Bond{% endblock %}
+
+{% block additional_head %}
+<style>
+    .api-key-value {
+        font-family: monospace;
+    }
+    .api-keys-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="api-keys-container">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-light">
+            <h4 class="mb-0"><i class="fas fa-key text-info me-2"></i> API Keys Management</h4>
+        </div>
+        <div class="card-body">
+            <p class="lead mb-4">
+                Manage your API keys for enhanced functionality like AI-powered analysis
+            </p>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> API keys are stored locally and are used to access third-party services.
+            </div>
+            
+            <div class="mb-4">
+                <h5 class="mb-3">Add New API Key</h5>
+                <form id="addApiKeyForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="keyName" class="form-label">API Name</label>
+                            <select class="form-select" id="keyName" required>
+                                <option value="" selected disabled>Select API</option>
+                                <option value="perplexity">Perplexity AI</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="keyValue" class="form-label">API Key</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="keyValue" required>
+                                <button class="btn btn-outline-secondary" type="button" id="toggleKeyVisibility">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-plus-circle me-2"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <hr>
+            
+            <div class="mt-4">
+                <h5 class="mb-3">Your API Keys</h5>
+                <div class="alert alert-warning" id="noKeysMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    You don't have any API keys stored yet.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped" id="apiKeysTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>API Name</th>
+                                <th>Key</th>
+                                <th>Added</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apiKeysList"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-5">
+                <h5 class="mb-3">API Key Information</h5>
+                <div class="accordion" id="apiInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="perplexityHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#perplexityInfo" aria-expanded="false" aria-controls="perplexityInfo">
+                                Perplexity AI
+                            </button>
+                        </h2>
+                        <div id="perplexityInfo" class="accordion-collapse collapse" aria-labelledby="perplexityHeading" data-bs-parent="#apiInfoAccordion">
+                            <div class="accordion-body">
+                                <p>Perplexity AI provides advanced document analysis capabilities. With this API key, the application can:</p>
+                                <ul>
+                                    <li>Extract key insights from document text</li>
+                                    <li>Answer specific questions about document content</li>
+                                    <li>Summarize large documents</li>
+                                </ul>
+                                <p>To get a Perplexity API key:</p>
+                                <ol>
+                                    <li>Visit <a href="https://www.perplexity.ai/" target="_blank">Perplexity.ai</a></li>
+                                    <li>Create an account or log in</li>
+                                    <li>Navigate to API settings</li>
+                                    <li>Generate a new API key</li>
+                                </ol>
+                                <div class="alert alert-primary">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Perplexity AI charges may apply based on your usage and account type.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-success position-fixed bottom-0 end-0 m-3" id="successAlert" style="display: none;">
+    <i class="fas fa-check-circle me-2"></i>
+    <span id="successMessage"></span>
+</div>
+
+<div class="alert alert-danger position-fixed bottom-0 end-0 m-3" id="errorAlert" style="display: none;">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <span id="errorMessage"></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/api_keys.js') }}"></script>
+{% endblock %}

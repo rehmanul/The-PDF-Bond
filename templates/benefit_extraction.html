@@ -1,0 +1,228 @@
+{% extends 'layout.html' %}
+
+{% block title %}Insurance Benefit Extraction - The PDF Bond{% endblock %}
+
+{% block additional_head %}
+<style>
+    .drop-area {
+        border: 2px dashed var(--bs-info);
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .drop-area:hover, .drop-area.drag-over {
+        background-color: rgba(13, 202, 240, 0.1);
+        border-color: var(--bs-info);
+    }
+    .processing-spinner {
+        display: none;
+    }
+    .result-section {
+        display: none;
+        margin-top: 30px;
+    }
+    .benefit-card {
+        transition: all 0.2s;
+    }
+    .benefit-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-light">
+                <h4 class="mb-0"><i class="fas fa-heart text-info me-2"></i> Insurance Benefit Extraction</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead text-center mb-4">Upload an insurance benefit summary to extract coverage details</p>
+                
+                <div id="uploadSection">
+                    <div class="drop-area" id="dropArea">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-info mb-3"></i>
+                        <h5>Drag & Drop your insurance PDF file here</h5>
+                        <p class="text-muted">or</p>
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="pdfFile" accept=".pdf" hidden>
+                            <button class="btn btn-info" id="browseButton">Browse Files</button>
+                        </div>
+                        <small class="text-muted">Maximum file size: 16MB</small>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button class="btn btn-primary" id="extractButton" disabled>
+                            <i class="fas fa-search me-2"></i> Extract Benefits
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="processing-spinner text-center py-5" id="processingSpinner">
+                    <div class="spinner-border text-info" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <p class="mt-3">Extracting insurance benefits...</p>
+                    <p class="text-muted small">This may take a few moments depending on the complexity of the document.</p>
+                </div>
+                
+                <div class="result-section" id="resultSection">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i> Benefits extracted successfully!
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-light">
+                            <h5 class="mb-0">Plan Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Carrier:</strong> <span id="carrierName">-</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Plan:</strong> <span id="planName">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card benefit-card h-100">
+                                <div class="card-header bg-dark text-light">
+                                    <h5 class="mb-0">Deductible</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <h6>Individual</h6>
+                                            <p class="lead" id="individualDeductible">-</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6>Family</h6>
+                                            <p class="lead" id="familyDeductible">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <h6>Out-of-Network Individual</h6>
+                                            <p id="oonIndividualDeductible">-</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6>Out-of-Network Family</h6>
+                                            <p id="oonFamilyDeductible">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card benefit-card h-100">
+                                <div class="card-header bg-dark text-light">
+                                    <h5 class="mb-0">Out-of-Pocket Maximum</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <h6>Individual</h6>
+                                            <p class="lead" id="individualOOP">-</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6>Family</h6>
+                                            <p class="lead" id="familyOOP">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <h6>Out-of-Network Individual</h6>
+                                            <p id="oonIndividualOOP">-</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6>Out-of-Network Family</h6>
+                                            <p id="oonFamilyOOP">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card benefit-card h-100">
+                                <div class="card-header bg-dark text-light">
+                                    <h5 class="mb-0">Office Visits</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <h6>Primary Care</h6>
+                                            <p class="lead" id="primaryCare">-</p>
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <h6>Specialist</h6>
+                                            <p class="lead" id="specialist">-</p>
+                                        </div>
+                                        <div class="col-12">
+                                            <h6>Urgent Care</h6>
+                                            <p class="lead" id="urgentCare">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card benefit-card h-100">
+                                <div class="card-header bg-dark text-light">
+                                    <h5 class="mb-0">Other Benefits</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <h6>Coinsurance</h6>
+                                            <p class="lead" id="coinsurance">-</p>
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <h6>Emergency Room</h6>
+                                            <p class="lead" id="emergencyRoom">-</p>
+                                        </div>
+                                        <div class="col-12">
+                                            <h6>Hospitalization</h6>
+                                            <p class="lead" id="hospitalization">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <a href="#" class="btn btn-success" id="downloadExcelBtn">
+                            <i class="fas fa-file-excel me-2"></i> Download as Excel
+                        </a>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button class="btn btn-secondary" id="resetButton">
+                            <i class="fas fa-redo me-2"></i> Process Another PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-danger mt-3" id="errorMessage" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorText"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/benefit_extraction.js') }}"></script>
+{% endblock %}
