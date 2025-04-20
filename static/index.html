@@ -1,10 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{% block title %}{% endblock %}</title>
+    <title>PDF Bond - Extract Actionable Data From PDFs</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    {% block additional_head %}{% endblock %}
+    <style>
+        .hero {
+            padding: 80px 0;
+            background-color: #f8f9fa;
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+        .card {
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -27,11 +44,81 @@
         </div>
     </nav>
     <div class="container">
-        {% block content %}{% endblock %}
+        <section class="hero text-center">
+            <div class="container">
+                <h1 class="display-4">Extract Actionable Data From PDFs</h1>
+                <p class="lead">Transform your PDFs into usable structured data with our powerful AI tools</p>
+                <a href="benefit-extraction.html" class="btn btn-primary btn-lg">Get Started</a>
+            </div>
+        </section>
+
+        <section class="features py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Key Features</h2>
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-alt feature-icon"></i>
+                                <h4 class="card-title">PDF Processing</h4>
+                                <p class="card-text">Upload any PDF and our system will intelligently parse and extract the content.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-robot feature-icon"></i>
+                                <h4 class="card-title">AI-Powered</h4>
+                                <p class="card-text">Advanced machine learning algorithms ensure accurate data extraction even from complex documents.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-clipboard-list feature-icon"></i>
+                                <h4 class="card-title">Structured Output</h4>
+                                <p class="card-text">Get results in JSON format that integrates easily with your existing systems.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="use-cases py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5">Use Cases</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4><i class="fas fa-heartbeat text-primary mr-2"></i> Insurance Document Processing</h4>
+                                <p>Extract benefits, coverage limits, exclusions, and more from insurance policy documents automatically.</p>
+                                <a href="benefit-extraction.html" class="btn btn-outline-primary">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4><i class="fas fa-file-invoice text-primary mr-2"></i> Financial Document Analysis</h4>
+                                <p>Process invoices, receipts, and financial statements to extract key information for accounting systems.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2025 PDF Bond. All Rights Reserved.</p>
+        </div>
+    </footer>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    {% block scripts %}{% endblock %}
 </body>
 </html>
