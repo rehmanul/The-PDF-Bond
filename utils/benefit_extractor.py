@@ -47,96 +47,429 @@ def find_percentage(text: str, keywords: List[str]) -> str:
 def create_benefit_excel(data: Dict[str, Any], output_path: str) -> bool:
     """Create an Excel file with the extracted benefits."""
     try:
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-        sheet.title = "Benefits Summary"
+        # Check if we're updating an existing template or creating a new file
+        try:
+            workbook = openpyxl.load_workbook(output_path)
+            sheet = workbook["HEALTH"]
+        except (FileNotFoundError, KeyError):
+            # Create a new file with the required structure
+            workbook = openpyxl.Workbook()
+            sheet = workbook.active
+            sheet.title = "HEALTH"
+            
+            # Set up basic structure and headers for the template
+            sheet['A1'] = "ITEM"
+            sheet['B1'] = "FEATURE"
+            sheet['C1'] = "DESCRIPTION"
+            sheet['D1'] = "Plan 1"
+            sheet['E1'] = "In Network"
+            sheet['F1'] = "Out of Network"
+            sheet['G1'] = "Plan 2"
+            sheet['H1'] = "In Network"
+            sheet['I1'] = "Out of Network"
+            
+            # Set up row labels
+            sheet['A4'] = "Carrier Name"
+            sheet['A5'] = "Plan Name"
+            sheet['A6'] = "Page Name"
+            sheet['A7'] = "Plan Explanation"
+            sheet['A9'] = "Single Deductible"
+            sheet['A10'] = "Family Deductible"
+            sheet['A12'] = "Coinsurance"
+            sheet['A14'] = "Single Out of Pocket Max"
+            sheet['A15'] = "Family Out of Pocket Max"
+            sheet['A17'] = "Primary Care Office Visit"
+            sheet['A18'] = "Specialist Office Visit"
+            sheet['A19'] = "Urgent Care"
+            sheet['A20'] = "Emergency Room"
+            sheet['A22'] = "Preventive Services"
+            sheet['A24'] = "Outpatient Surgery"
+            sheet['A25'] = "Inpatient Hospitalization"
+            sheet['A26'] = "CT Scan, PT Scan, MRI"
+            sheet['A27'] = "Hospital Newborn Delivery"
+            sheet['A29'] = "Prescription Deductible"
+            sheet['A30'] = "Generic (Tier 1)"
+            sheet['A31'] = "Brand Name (Tier 2)"
+            sheet['A32'] = "Non-Preferred (Tier 3)"
+            sheet['A33'] = "Specialty (Tier 4)"
+            sheet['A34'] = "Specialty (Tier 5)"
+            sheet['A35'] = "Mail Order (90 day supply)"
+            sheet['A37'] = "Plan Year"
+            sheet['A38'] = "Deductible Period"
+            sheet['A39'] = "Deductible Explanation"
+            sheet['A40'] = "Network Type"
+            sheet['A41'] = "Network Name"
+            sheet['A42'] = "Member Website"
+            sheet['A43'] = "Customer Service Phone"
         
-        # Add headers
-        headers = ["Carrier", "Plan", "Category", "Benefit Type", "In Network", "Out of Network"]
-        for col, header in enumerate(headers, 1):
-            cell = sheet.cell(row=1, column=col)
-            cell.value = header
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
+        # Find the next available plan column (D, G, J, etc.)
+        next_plan_col = None
+        for col_idx in range(4, sheet.max_column + 1, 3):  # Start from column D (index 4)
+            col_letter = openpyxl.utils.get_column_letter(col_idx)
+            if not sheet[f'{col_letter}4'].value:  # Check carrier name cell
+                next_plan_col = col_idx
+                break
         
-        # Add data
-        row = 2
-        for result in data.get("results", []):
-            # Add deductible info
-            sheet.cell(row=row, column=1).value = result.get("carrier_name", "Unknown")
-            sheet.cell(row=row, column=2).value = result.get("plan_name", "Unknown")
-            sheet.cell(row=row, column=3).value = "Deductible"
-            sheet.cell(row=row, column=4).value = "Individual"
-            sheet.cell(row=row, column=5).value = result.get("deductible", {}).get("individual_in_network", "Not found")
-            sheet.cell(row=row, column=6).value = result.get("deductible", {}).get("individual_out_network", "Not found")
-            row += 1
+        if next_plan_col is None:
+            # All slots are full, add a new plan column
+            next_plan_col = sheet.max_column + 1
             
-            # Family deductible
-            sheet.cell(row=row, column=3).value = "Deductible"
-            sheet.cell(row=row, column=4).value = "Family"
-            sheet.cell(row=row, column=5).value = result.get("deductible", {}).get("family_in_network", "Not found")
-            sheet.cell(row=row, column=6).value = result.get("deductible", {}).get("family_out_network", "Not found")
-            row += 1
+            # Add header for the new plan
+            plan_header_cell = sheet.cell(row=1, column=next_plan_col)
+            plan_header_cell.value = f"Plan {(next_plan_col - 1) // 3}"
             
-            # Out of pocket
-            sheet.cell(row=row, column=3).value = "Out of Pocket"
-            sheet.cell(row=row, column=4).value = "Individual"
-            sheet.cell(row=row, column=5).value = result.get("out_of_pocket", {}).get("individual_in_network", "Not found")
-            sheet.cell(row=row, column=6).value = result.get("out_of_pocket", {}).get("individual_out_network", "Not found")
-            row += 1
+            # Add In Network and Out of Network headers
+            in_network_cell = sheet.cell(row=1, column=next_plan_col + 1)
+            in_network_cell.value = "In Network"
             
-            # Family out of pocket
-            sheet.cell(row=row, column=3).value = "Out of Pocket"
-            sheet.cell(row=row, column=4).value = "Family"
-            sheet.cell(row=row, column=5).value = result.get("out_of_pocket", {}).get("family_in_network", "Not found")
-            sheet.cell(row=row, column=6).value = result.get("out_of_pocket", {}).get("family_out_network", "Not found")
-            row += 1
-            
-            # Coinsurance
-            sheet.cell(row=row, column=3).value = "Coinsurance"
-            sheet.cell(row=row, column=4).value = "Standard"
-            sheet.cell(row=row, column=5).value = result.get("coinsurance", {}).get("in_network", "Not found")
-            sheet.cell(row=row, column=6).value = result.get("coinsurance", {}).get("out_network", "Not found")
-            row += 1
-            
-            # Office visits
-            sheet.cell(row=row, column=3).value = "Office Visit"
-            sheet.cell(row=row, column=4).value = "Primary Care"
-            sheet.cell(row=row, column=5).value = result.get("office_visits", {}).get("primary_care", "Not found")
-            sheet.cell(row=row, column=6).value = "Not found"
-            row += 1
-            
-            # Specialist
-            sheet.cell(row=row, column=3).value = "Office Visit"
-            sheet.cell(row=row, column=4).value = "Specialist"
-            sheet.cell(row=row, column=5).value = result.get("office_visits", {}).get("specialist", "Not found")
-            sheet.cell(row=row, column=6).value = "Not found"
-            row += 1
-            
-            # Urgent care
-            sheet.cell(row=row, column=3).value = "Office Visit"
-            sheet.cell(row=row, column=4).value = "Urgent Care"
-            sheet.cell(row=row, column=5).value = result.get("office_visits", {}).get("urgent_care", "Not found")
-            sheet.cell(row=row, column=6).value = "Not found"
-            row += 1
-            
-            # Emergency room
-            sheet.cell(row=row, column=3).value = "Hospital Services"
-            sheet.cell(row=row, column=4).value = "Emergency Room"
-            sheet.cell(row=row, column=5).value = result.get("emergency_room", "Not found")
-            sheet.cell(row=row, column=6).value = "Not found"
-            row += 1
-            
-            # Hospitalization
-            sheet.cell(row=row, column=3).value = "Hospital Services"
-            sheet.cell(row=row, column=4).value = "Hospitalization"
-            sheet.cell(row=row, column=5).value = result.get("hospitalization", "Not found")
-            sheet.cell(row=row, column=6).value = "Not found"
-            row += 1
+            out_network_cell = sheet.cell(row=1, column=next_plan_col + 2)
+            out_network_cell.value = "Out of Network"
         
-        # Adjust column widths
-        for i in range(1, 7):
-            sheet.column_dimensions[openpyxl.utils.get_column_letter(i)].width = 20
+        # Convert column index to letter
+        col_letter = openpyxl.utils.get_column_letter(next_plan_col)
+        in_col_letter = openpyxl.utils.get_column_letter(next_plan_col + 1)
+        out_col_letter = openpyxl.utils.get_column_letter(next_plan_col + 2)
+        
+        # Get the results from the data
+        result = data
+        if "results" in data and len(data["results"]) > 0:
+            result = data["results"][0]
+        
+        # Fill in plan information
+        sheet[f'{col_letter}4'] = result.get("carrier_name", "Unknown")
+        sheet[f'{col_letter}5'] = result.get("plan_name", "Unknown")
+        sheet[f'{col_letter}6'] = "Health Insurance"
+        sheet[f'{col_letter}7'] = "Health insurance provides financial protection against medical costs. It helps employees access necessary healthcare while minimizing out-of-pocket expenses."
+        
+        # Determine if plan is HSA
+        is_hsa_plan = "HSA" in result.get("plan_name", "").upper()
+        
+        # Extract deductible values (numbers only for the spreadsheet)
+        in_deductible = result.get("deductible", {}).get("individual_in_network", "")
+        out_deductible = result.get("deductible", {}).get("individual_out_network", "")
+        
+        # Extract just the number from the deductible strings
+        in_deductible_num = re.search(r'\$?([\d,]+)', in_deductible)
+        out_deductible_num = re.search(r'\$?([\d,]+)', out_deductible)
+        
+        # Fill deductibles (numbers only)
+        sheet[f'{in_col_letter}9'] = in_deductible_num.group(1).replace(',', '') if in_deductible_num else ""
+        sheet[f'{out_col_letter}9'] = out_deductible_num.group(1).replace(',', '') if out_deductible_num else ""
+        
+        # Family deductibles
+        in_family_deductible = result.get("deductible", {}).get("family_in_network", "")
+        out_family_deductible = result.get("deductible", {}).get("family_out_network", "")
+        
+        # Extract just the number from the family deductible strings
+        in_family_deductible_num = re.search(r'\$?([\d,]+)', in_family_deductible)
+        out_family_deductible_num = re.search(r'\$?([\d,]+)', out_family_deductible)
+        
+        # Fill family deductibles (numbers only)
+        sheet[f'{in_col_letter}10'] = in_family_deductible_num.group(1).replace(',', '') if in_family_deductible_num else ""
+        sheet[f'{out_col_letter}10'] = out_family_deductible_num.group(1).replace(',', '') if out_family_deductible_num else ""
+        
+        # Coinsurance (numbers only)
+        in_coinsurance = result.get("coinsurance", {}).get("in_network", "")
+        out_coinsurance = result.get("coinsurance", {}).get("out_network", "")
+        
+        # Extract just the number from coinsurance strings
+        in_coinsurance_num = re.search(r'(\d+)%', in_coinsurance)
+        out_coinsurance_num = re.search(r'(\d+)%', out_coinsurance)
+        
+        # Fill coinsurance (numbers only)
+        sheet[f'{in_col_letter}12'] = in_coinsurance_num.group(1) if in_coinsurance_num else ""
+        sheet[f'{out_col_letter}12'] = out_coinsurance_num.group(1) if out_coinsurance_num else ""
+        
+        # Out of pocket max (numbers only)
+        in_oop = result.get("out_of_pocket", {}).get("individual_in_network", "")
+        out_oop = result.get("out_of_pocket", {}).get("individual_out_network", "")
+        
+        # Extract just the number from OOP strings
+        in_oop_num = re.search(r'\$?([\d,]+)', in_oop)
+        out_oop_num = re.search(r'\$?([\d,]+)', out_oop)
+        
+        # Fill OOP (numbers only)
+        sheet[f'{in_col_letter}14'] = in_oop_num.group(1).replace(',', '') if in_oop_num else ""
+        sheet[f'{out_col_letter}14'] = out_oop_num.group(1).replace(',', '') if out_oop_num else ""
+        
+        # Family OOP (numbers only)
+        in_family_oop = result.get("out_of_pocket", {}).get("family_in_network", "")
+        out_family_oop = result.get("out_of_pocket", {}).get("family_out_network", "")
+        
+        # Extract just the number from family OOP strings
+        in_family_oop_num = re.search(r'\$?([\d,]+)', in_family_oop)
+        out_family_oop_num = re.search(r'\$?([\d,]+)', out_family_oop)
+        
+        # Fill family OOP (numbers only)
+        sheet[f'{in_col_letter}15'] = in_family_oop_num.group(1).replace(',', '') if in_family_oop_num else ""
+        sheet[f'{out_col_letter}15'] = out_family_oop_num.group(1).replace(',', '') if out_family_oop_num else ""
+        
+        # Doctor visits - PCP
+        primary_care = result.get("office_visits", {}).get("primary_care", "Not found")
+        if primary_care != "Not found":
+            # Format according to rules
+            if re.match(r'^\$\d+$', primary_care):
+                # For HSA plans, add "after deductible" to copay amounts
+                if is_hsa_plan:
+                    primary_care = f"{primary_care} after deductible"
+            elif re.match(r'^\d+%$', primary_care):
+                # Add "after deductible" to percentage amounts
+                primary_care = f"{primary_care} after deductible"
+        
+        # Out of network PCP - usually from tables or estimated from coinsurance
+        out_network_pcp = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}17'] = primary_care
+        sheet[f'{out_col_letter}17'] = out_network_pcp
+        
+        # Specialist visits
+        specialist = result.get("office_visits", {}).get("specialist", "Not found")
+        if specialist != "Not found":
+            # Format according to rules
+            if re.match(r'^\$\d+$', specialist):
+                # For HSA plans, add "after deductible" to copay amounts
+                if is_hsa_plan:
+                    specialist = f"{specialist} after deductible"
+            elif re.match(r'^\d+%$', specialist):
+                # Add "after deductible" to percentage amounts
+                specialist = f"{specialist} after deductible"
+        
+        # Out of network specialist
+        out_network_specialist = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}18'] = specialist
+        sheet[f'{out_col_letter}18'] = out_network_specialist
+        
+        # Urgent care
+        urgent_care = result.get("office_visits", {}).get("urgent_care", "Not found")
+        if urgent_care != "Not found":
+            # Format according to rules
+            if re.match(r'^\$\d+$', urgent_care):
+                # For HSA plans, add "after deductible" to copay amounts
+                if is_hsa_plan:
+                    urgent_care = f"{urgent_care} after deductible"
+            elif re.match(r'^\d+%$', urgent_care):
+                # Add "after deductible" to percentage amounts
+                urgent_care = f"{urgent_care} after deductible"
+        
+        # Out of network urgent care
+        out_network_urgent = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}19'] = urgent_care
+        sheet[f'{out_col_letter}19'] = out_network_urgent
+        
+        # Emergency room (same for in and out of network)
+        emergency_room = result.get("emergency_room", "Not found")
+        if emergency_room != "Not found":
+            # Format according to rules
+            if re.match(r'^\$\d+$', emergency_room):
+                # For HSA plans, add "after deductible" to copay amounts
+                if is_hsa_plan:
+                    emergency_room = f"{emergency_room} after deductible"
+            elif re.match(r'^\d+%$', emergency_room):
+                # Add "after deductible" to percentage amounts
+                emergency_room = f"{emergency_room} after deductible"
+        
+        sheet[f'{in_col_letter}20'] = emergency_room
+        sheet[f'{out_col_letter}20'] = emergency_room  # Same as in-network per requirements
+        
+        # Preventive services (0% for in-network)
+        sheet[f'{in_col_letter}22'] = "0%"
+        sheet[f'{out_col_letter}22'] = "50% after deductible"  # Default if not found
+        
+        # Outpatient surgery
+        outpatient_surgery = result.get("outpatient_surgery", "Not found")
+        if outpatient_surgery != "Not found":
+            # Check for freestanding vs hospital format
+            if "Freestanding:" in outpatient_surgery:
+                # Already formatted correctly
+                pass
+            else:
+                # Format according to rules
+                if re.match(r'^\$\d+$', outpatient_surgery):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        outpatient_surgery = f"{outpatient_surgery} after deductible"
+                elif re.match(r'^\d+%$', outpatient_surgery):
+                    # Add "after deductible" to percentage amounts
+                    outpatient_surgery = f"{outpatient_surgery} after deductible"
+        
+        # Out of network outpatient surgery
+        out_network_surgery = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}24'] = outpatient_surgery
+        sheet[f'{out_col_letter}24'] = out_network_surgery
+        
+        # Inpatient hospitalization
+        hospitalization = result.get("hospitalization", "Not found")
+        if hospitalization != "Not found":
+            # Check for per occurrence format
+            if "then" in hospitalization:
+                # Already formatted correctly
+                pass
+            else:
+                # Format according to rules
+                if re.match(r'^\$\d+$', hospitalization):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        hospitalization = f"{hospitalization} after deductible"
+                elif re.match(r'^\d+%$', hospitalization):
+                    # Add "after deductible" to percentage amounts
+                    hospitalization = f"{hospitalization} after deductible"
+        
+        # Out of network hospitalization
+        out_network_hosp = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}25'] = hospitalization
+        sheet[f'{out_col_letter}25'] = out_network_hosp
+        
+        # CT/MRI/PT Scans
+        imaging = result.get("imaging", "Not found")
+        if imaging != "Not found":
+            # Check for freestanding vs hospital format
+            if "Freestanding:" in imaging:
+                # Already formatted correctly
+                pass
+            else:
+                # Format according to rules
+                if re.match(r'^\$\d+$', imaging):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        imaging = f"{imaging} after deductible"
+                elif re.match(r'^\d+%$', imaging):
+                    # Add "after deductible" to percentage amounts
+                    imaging = f"{imaging} after deductible"
+        
+        # Out of network imaging
+        out_network_imaging = "50% after deductible"  # Default if not found
+        
+        sheet[f'{in_col_letter}26'] = imaging
+        sheet[f'{out_col_letter}26'] = out_network_imaging
+        
+        # Hospital newborn delivery (same as hospitalization per requirements)
+        sheet[f'{in_col_letter}27'] = hospitalization
+        sheet[f'{out_col_letter}27'] = out_network_hosp
+        
+        # Prescription benefits
+        if "prescription" in result:
+            rx_benefits = result.get("prescription", {})
+            
+            # Prescription deductible
+            rx_deductible = rx_benefits.get("deductible", "")
+            if rx_deductible:
+                sheet[f'{in_col_letter}29'] = rx_deductible
+                sheet[f'{out_col_letter}29'] = rx_deductible
+            
+            # Generic (Tier 1)
+            generic = rx_benefits.get("tier_1", "")
+            if generic:
+                if is_hsa_plan and re.match(r'^\$\d+$', generic):
+                    generic = f"{generic} after deductible"
+                sheet[f'{in_col_letter}30'] = generic
+                sheet[f'{out_col_letter}30'] = "Not covered"
+            
+            # Brand (Tier 2)
+            brand = rx_benefits.get("tier_2", "")
+            if brand:
+                if is_hsa_plan and re.match(r'^\$\d+$', brand):
+                    brand = f"{brand} after deductible"
+                sheet[f'{in_col_letter}31'] = brand
+                sheet[f'{out_col_letter}31'] = "Not covered"
+            
+            # Non-preferred (Tier 3)
+            non_preferred = rx_benefits.get("tier_3", "")
+            if non_preferred:
+                if is_hsa_plan and re.match(r'^\$\d+$', non_preferred):
+                    non_preferred = f"{non_preferred} after deductible"
+                sheet[f'{in_col_letter}32'] = non_preferred
+                sheet[f'{out_col_letter}32'] = "Not covered"
+            
+            # Specialty (Tier 4)
+            specialty = rx_benefits.get("tier_4", "")
+            if specialty:
+                if is_hsa_plan and re.match(r'^\$\d+$', specialty):
+                    specialty = f"{specialty} after deductible"
+                sheet[f'{in_col_letter}33'] = specialty
+                sheet[f'{out_col_letter}33'] = "Not covered"
+            
+            # Specialty (Tier 5)
+            specialty5 = rx_benefits.get("tier_5", "")
+            if specialty5:
+                if is_hsa_plan and re.match(r'^\$\d+$', specialty5):
+                    specialty5 = f"{specialty5} after deductible"
+                sheet[f'{in_col_letter}34'] = specialty5
+                sheet[f'{out_col_letter}34'] = "Not covered"
+            
+            # Mail order
+            mail_order = rx_benefits.get("mail_order", "")
+            if mail_order:
+                if is_hsa_plan and not "after deductible" in mail_order:
+                    # Add to each cost in the tier list
+                    mail_order_parts = mail_order.split("/")
+                    formatted_parts = []
+                    for part in mail_order_parts:
+                        part = part.strip()
+                        if re.match(r'^\$\d+$', part):
+                            formatted_parts.append(f"{part} after deductible")
+                        else:
+                            formatted_parts.append(part)
+                    mail_order = " / ".join(formatted_parts)
+                sheet[f'{in_col_letter}35'] = mail_order
+                sheet[f'{out_col_letter}35'] = "Not covered"
+        
+        # Additional plan information
+        from datetime import datetime
+        current_year = datetime.now().year
+        
+        sheet[f'{in_col_letter}37'] = str(current_year)
+        sheet[f'{in_col_letter}38'] = "Calendar Year: January 1st – December 31st"
+        
+        # Deductible explanation
+        deductible_type = "Embedded"  # Default
+        if "Aggregate" in self.text or "aggregate" in self.text:
+            deductible_type = "Aggregate"
+        sheet[f'{in_col_letter}39'] = deductible_type
+        
+        # Network type
+        network_type = "PPO"  # Default
+        for network in ["PPO", "HMO", "EPO", "POS"]:
+            if network in result.get("plan_name", "") or network in self.text:
+                network_type = network
+                break
+        sheet[f'{in_col_letter}40'] = network_type
+        
+        # Network name (often next to network type)
+        network_name_match = re.search(r'(?i)(?:network|network name|provider network)[\s:]+([A-Za-z0-9\s\-]+)', self.text)
+        network_name = network_name_match.group(1).strip() if network_name_match else ""
+        sheet[f'{in_col_letter}41'] = network_name
+        
+        # Member website
+        website_match = re.search(r'(?i)(?:website|member website|web)[\s:]+([A-Za-z0-9\s\-\.\/:]+\.[a-z]{2,})', self.text)
+        website = website_match.group(1).strip() if website_match else ""
+        if not website:
+            # Try to find URLs
+            url_match = re.search(r'(?i)((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[a-zA-Z0-9-_.]+)*)', self.text)
+            website = url_match.group(1) if url_match else ""
+        sheet[f'{in_col_letter}42'] = website
+        
+        # Customer service phone
+        phone_match = re.search(r'(?i)(?:customer service|phone|call|contact)[\s:]+(?:\d{1,2}-?)?(?:\d{3})[\s\.-]+(?:\d{3})[\s\.-]+(?:\d{4})', self.text)
+        phone = phone_match.group(0) if phone_match else ""
+        if not phone:
+            # Try a simpler pattern for phone numbers
+            phone_match = re.search(r'(?i)(?:\d{1,2}-?)?(?:\d{3})[\s\.-]+(?:\d{3})[\s\.-]+(?:\d{4})', self.text)
+            phone = phone_match.group(0) if phone_match else ""
+        
+        # Format the phone number
+        if phone:
+            # Extract just the digits
+            digits = re.findall(r'\d', phone)
+            if len(digits) >= 10:
+                # Format as XXX-XXX-XXXX
+                start_idx = 0 if len(digits) == 10 else len(digits) - 10
+                phone = f"{digits[start_idx]}{digits[start_idx+1]}{digits[start_idx+2]}-{digits[start_idx+3]}{digits[start_idx+4]}{digits[start_idx+5]}-{digits[start_idx+6]}{digits[start_idx+7]}{digits[start_idx+8]}{digits[start_idx+9]}"
+        
+        sheet[f'{in_col_letter}43'] = phone
         
         # Save workbook
         workbook.save(output_path)
@@ -577,4 +910,155 @@ class BenefitExtractor:
         if not self.benefits:
             self._extract_benefits()
         
-        return self.benefits
+        # Apply formatting rules based on plan type and special formatting requirements
+        formatted_benefits = self.benefits.copy()
+        
+        # Check if this is an HSA plan
+        is_hsa_plan = "HSA" in formatted_benefits.get("plan_name", "").upper()
+        
+        # Format office visits based on HSA plan rules
+        if "office_visits" in formatted_benefits:
+            office_visits = formatted_benefits["office_visits"]
+            
+            # Primary care visit formatting
+            if "primary_care" in office_visits:
+                primary_care = office_visits["primary_care"]
+                if re.match(r'^\$\d+$', primary_care):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        office_visits["primary_care"] = f"{primary_care} after deductible"
+                elif re.match(r'^\d+%$', primary_care):
+                    # Add "after deductible" to percentage amounts
+                    office_visits["primary_care"] = f"{primary_care} after deductible"
+            
+            # Specialist visit formatting
+            if "specialist" in office_visits:
+                specialist = office_visits["specialist"]
+                if re.match(r'^\$\d+$', specialist):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        office_visits["specialist"] = f"{specialist} after deductible"
+                elif re.match(r'^\d+%$', specialist):
+                    # Add "after deductible" to percentage amounts
+                    office_visits["specialist"] = f"{specialist} after deductible"
+            
+            # Urgent care formatting
+            if "urgent_care" in office_visits:
+                urgent_care = office_visits["urgent_care"]
+                if re.match(r'^\$\d+$', urgent_care):
+                    # For HSA plans, add "after deductible" to copay amounts
+                    if is_hsa_plan:
+                        office_visits["urgent_care"] = f"{urgent_care} after deductible"
+                elif re.match(r'^\d+%$', urgent_care):
+                    # Add "after deductible" to percentage amounts
+                    office_visits["urgent_care"] = f"{urgent_care} after deductible"
+        
+        # Format emergency room
+        if "emergency_room" in formatted_benefits:
+            emergency_room = formatted_benefits["emergency_room"]
+            if re.match(r'^\$\d+$', emergency_room):
+                # For HSA plans, add "after deductible" to copay amounts
+                if is_hsa_plan:
+                    formatted_benefits["emergency_room"] = f"{emergency_room} after deductible"
+            elif re.match(r'^\d+%$', emergency_room):
+                # Add "after deductible" to percentage amounts
+                formatted_benefits["emergency_room"] = f"{emergency_room} after deductible"
+        
+        # Format hospitalization - check for per occurrence deductibles
+        if "hospitalization" in formatted_benefits:
+            hospitalization = formatted_benefits["hospitalization"]
+            
+            # Check for per occurrence deductible
+            per_occurrence_match = re.search(r'(?i)(\$\d+)\s+per\s+(?:occurrence|admission)', hospitalization)
+            percentage_match = re.search(r'(\d+)%', hospitalization)
+            
+            if per_occurrence_match and percentage_match:
+                per_occurrence = per_occurrence_match.group(1)
+                percentage = percentage_match.group(1)
+                formatted_benefits["hospitalization"] = f"{per_occurrence}, then {percentage}% after deductible"
+            elif re.match(r'^\d+%$', hospitalization):
+                # Add "after deductible" to percentage amounts
+                formatted_benefits["hospitalization"] = f"{hospitalization} after deductible"
+        
+        # Add multi-level formatting for facilities (e.g., outpatient/inpatient surgery)
+        if "outpatient_surgery" in formatted_benefits:
+            # Check for different facility types
+            freestanding_match = re.search(r'(?i)(?:Freestanding|Ambulatory|Free\s+standing).*?(\d+%|\$\d+)', self.text)
+            hospital_match = re.search(r'(?i)(?:Hospital|Outpatient\s+hospital).*?facility.*?(\d+%|\$\d+)', self.text)
+            
+            if freestanding_match and hospital_match:
+                freestanding_value = freestanding_match.group(1)
+                hospital_value = hospital_match.group(1)
+                
+                # Format each value properly
+                if re.match(r'^\d+%$', freestanding_value):
+                    freestanding_value += " after deductible"
+                elif re.match(r'^\$\d+$', freestanding_value) and is_hsa_plan:
+                    freestanding_value += " after deductible"
+                    
+                if re.match(r'^\d+%$', hospital_value):
+                    hospital_value += " after deductible"
+                elif re.match(r'^\$\d+$', hospital_value) and is_hsa_plan:
+                    hospital_value += " after deductible"
+                
+                formatted_benefits["outpatient_surgery"] = f"Freestanding: {freestanding_value} / Hospital: {hospital_value}"
+        
+        # For imaging services (CT, MRI, etc.)
+        if "imaging" in formatted_benefits:
+            # Check for different facility types
+            freestanding_match = re.search(r'(?i)(?:Freestanding|Ambulatory|Free\s+standing).*?(?:scan|imaging|diagnostic).*?(\d+%|\$\d+)', self.text)
+            hospital_match = re.search(r'(?i)(?:Hospital|Outpatient\s+hospital).*?(?:scan|imaging|diagnostic).*?(\d+%|\$\d+)', self.text)
+            
+            if freestanding_match and hospital_match:
+                freestanding_value = freestanding_match.group(1)
+                hospital_value = hospital_match.group(1)
+                
+                # Format each value properly
+                if re.match(r'^\d+%$', freestanding_value):
+                    freestanding_value += " after deductible"
+                elif re.match(r'^\$\d+$', freestanding_value) and is_hsa_plan:
+                    freestanding_value += " after deductible"
+                    
+                if re.match(r'^\d+%$', hospital_value):
+                    hospital_value += " after deductible"
+                elif re.match(r'^\$\d+$', hospital_value) and is_hsa_plan:
+                    hospital_value += " after deductible"
+                
+                formatted_benefits["imaging"] = f"Freestanding: {freestanding_value} / Hospital: {hospital_value}"
+        
+        # Format prescription drug benefits - check for specialty medications
+        if "prescription" in formatted_benefits:
+            rx_benefits = formatted_benefits["prescription"]
+            
+            # Format each tier
+            for tier_key in rx_benefits:
+                if "tier" in tier_key.lower():
+                    tier_value = rx_benefits[tier_key]
+                    
+                    # Check for specialty notation
+                    specialty_match = re.search(r'(?i)specialty.*?(\$\d+|\d+%)', self.text)
+                    if specialty_match and "tier" in tier_key.lower() and ("specialty" in tier_key.lower() or int(tier_key[-1]) >= 3):
+                        specialty_value = specialty_match.group(1)
+                        
+                        # Format specialty value
+                        if re.match(r'^\d+%$', specialty_value):
+                            specialty_value += " after deductible"
+                        elif re.match(r'^\$\d+$', specialty_value) and is_hsa_plan:
+                            specialty_value += " after deductible"
+                            
+                        # Add specialty notation
+                        rx_benefits[tier_key] = f"{tier_value} (Specialty: {specialty_value})"
+                    
+                    # Format regular tier value
+                    elif re.match(r'^\$\d+$', tier_value) and is_hsa_plan:
+                        rx_benefits[tier_key] = f"{tier_value} after deductible"
+                    elif re.match(r'^\d+%$', tier_value):
+                        rx_benefits[tier_key] = f"{tier_value} after deductible"
+        
+        # Set preventive services to 0% for in-network
+        if "preventive_services" not in formatted_benefits:
+            formatted_benefits["preventive_services"] = {"in_network": "0%", "out_network": "Not found"}
+        else:
+            formatted_benefits["preventive_services"]["in_network"] = "0%"
+        
+        return formatted_benefits
