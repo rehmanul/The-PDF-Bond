@@ -18,8 +18,25 @@ if [ -f "requirements.txt" ]; then
 elif [ -f "attached_assets/requirements.txt" ]; then
   pip install -r attached_assets/requirements.txt
 else
-  echo "Error: requirements.txt file not found in root or attached_assets directory"
-  exit 1
+  # Create a minimal requirements.txt file if it doesn't exist
+  echo "requirements.txt not found, creating one..."
+  cat > requirements.txt << EOF
+Flask>=3.1.0
+openpyxl>=3.1.5
+pandas>=2.2.3
+pdfplumber>=0.11.6
+PyPDF2>=3.0.1
+requests>=2.32.3
+Werkzeug>=3.1.3
+gunicorn>=23.0.0
+email-validator>=2.0.0
+flask-sqlalchemy>=3.1.0
+psycopg2-binary>=2.9.9
+xlsxwriter>=3.2.1
+numpy>=1.26.4
+Pillow>=10.2.0
+EOF
+  pip install -r requirements.txt
 fi
 
 # Copy static files
