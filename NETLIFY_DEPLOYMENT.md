@@ -25,6 +25,8 @@ The deployment process involves the following steps:
 - HTML templates are placed directly in the `static` folder
 - API functionality is limited compared to the full Flask application
 - File uploads and advanced PDF processing aren't available in the static deployment
+- The benefit extraction API provides simulated responses with proper HSA plan formatting
+- The mass upload formatter is implemented as a simulated API endpoint
 
 ## Limitations
 
@@ -33,6 +35,9 @@ The Netlify deployment has the following limitations compared to the full applic
 1. No file upload functionality
 2. No PDF processing capabilities
 3. Limited API functionality
+   - Mass upload formatter provides simulated responses
+   - HSA plan formatting is available but with predefined data
+   - No actual Excel file generation from the API
 4. No session persistence
 5. No database access
 
