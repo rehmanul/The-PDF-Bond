@@ -7,10 +7,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
 
-    // Setup file drag & drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
+    // Only setup drag & drop if the elements exist
+    if (dropArea) {
+        // Setup file drag & drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
 
     function preventDefaults(e) {
         e.preventDefault();
@@ -35,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle dropped files
     dropArea.addEventListener('drop', handleDrop, false);
+    }
 
     function handleDrop(e) {
         const dt = e.dataTransfer;
@@ -59,11 +62,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Handle browse button
-    browseButton.addEventListener('click', function() {
-        pdfFileInput.click();
-    });
+    if (browseButton && pdfFileInput) {
+        browseButton.addEventListener('click', function() {
+            pdfFileInput.click();
+        });
+    }
 
-    pdfFileInput.addEventListener('change', function() {
+    if (pdfFileInput) {
+        pdfFileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
             if (this.files[0].type === 'application/pdf') {
                 extractButton.disabled = false;
@@ -83,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    }
 
     function resetFileSelection() {
         pdfFileInput.value = '';
@@ -104,7 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Extract button click handler
-    extractButton.addEventListener('click', function() {
+    if (extractButton) {
+        extractButton.addEventListener('click', function() {
         document.getElementById('dropArea').style.display = 'none';
         document.getElementById('extractButton').style.display = 'none';
         document.querySelectorAll('.form-check').forEach(el => el.style.display = 'none');
@@ -120,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/results.html';
         }, 3000);
     });
+    }
 
     // Error display function
     function showError(message) {
