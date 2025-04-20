@@ -17,6 +17,7 @@ from utils.api_keys import load_api_keys, save_api_key, delete_api_key
 from utils.perplexity_api import analyze_text_with_perplexity
 from utils.pdf_processor import PDFProcessor
 from utils.benefit_extractor import BenefitExtractor, find_benefit, find_percentage, create_benefit_excel
+from utils.mass_upload_formatter import format_benefit_excel
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
