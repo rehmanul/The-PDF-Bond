@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const dropArea = document.getElementById('dropArea');
     const pdfFile = document.getElementById('pdfFile');
+    const templateFile = document.getElementById('templateFile');
+    const useMassFormatCheck = document.getElementById('useMassFormatCheck');
+    const useAIFormatCheck = document.getElementById('useAIFormatCheck');
     const browseButton = document.getElementById('browseButton');
     const extractButton = document.getElementById('extractButton');
     const processingSpinner = document.getElementById('processingSpinner');
@@ -127,8 +130,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('pdf_file', file);
         
+        // Add the template file if provided
+        if (templateFile && templateFile.files.length > 0) {
+            formData.append('template_file', templateFile.files[0]);
+        }
+        
+        // Add the mass upload format option
+        formData.append('use_mass_format', useMassFormatCheck.checked);
+        
+        // Determine which endpoint to use based on the AI checkbox
+        const endpoint = useAIFormatCheck.checked ? '/extract-benefits-ai' : '/extract-benefits';
+        
+        // Update processing text
+        if (useAIFormatCheck.checked) {
+            document.querySelector('#processingSpinner p').textContent = 'Performing AI-powered extraction...';
+            document.querySelector('#processingSpinner p.text-muted').textContent = 
+                'Using advanced AI to extract detailed benefit information. This may take a bit longer.';
+        }
+        
         // Send to server
-        fetch('/extract-benefits', {
+        fetch(endpoint, {
             method: 'POST',
             body: formData
         })
@@ -138,6 +159,25 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 displayResults(data.result, data.excel_file);
+                
+                // Add information about the extraction method used
+                let methodMessage = '';
+                if (data.extraction_method === 'perplexity_ai') {
+                    methodMessage = 'Benefits were extracted using advanced AI technology with formatting for mass upload templates.';
+                } else if (data.format === 'mass_upload_template') {
+                    methodMessage = 'Benefits were extracted and formatted for mass upload templates.';
+                }
+                
+                if (methodMessage) {
+                    // Create an info alert
+                    const infoAlert = document.createElement('div');
+                    infoAlert.className = 'alert alert-info mt-3';
+                    infoAlert.innerHTML = `<i class="fas fa-info-circle me-2"></i> ${methodMessage}`;
+                    
+                    // Insert it after the success alert
+                    const successAlert = resultSection.querySelector('.alert-success');
+                    successAlert.parentNode.insertBefore(infoAlert, successAlert.nextSibling);
+                }
                 
                 // Show warning if there was a fallback to simplified extraction
                 if (data.warning) {
@@ -240,9 +280,19 @@ document.addEventListener('DOMContentLoaded', function() {
             <small class="text-muted">Maximum file size: 16MB</small>
         `;
         
-        // Reset the file input
+        // Reset the file inputs
         pdfFile.value = '';
+        if (templateFile) templateFile.value = '';
         extractButton.disabled = true;
+        
+        // Reset checkboxes to default values
+        if (useMassFormatCheck) useMassFormatCheck.checked = true;
+        if (useAIFormatCheck) useAIFormatCheck.checked = true;
+        
+        // Reset processing spinner text
+        document.querySelector('#processingSpinner p').textContent = 'Extracting insurance benefits...';
+        document.querySelector('#processingSpinner p.text-muted').textContent = 
+            'This may take a few moments depending on the complexity of the document.';
         
         // Re-attach event listener to the new browse button
         document.getElementById('browseButton').addEventListener('click', () => {

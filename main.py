@@ -223,6 +223,8 @@ def extract_benefits():
             return jsonify({"success": False, "error": "No file part"})
 
         file = request.files['pdf_file']
+        template_file = request.files['template_file'] if 'template_file' in request.files else None
+        use_mass_format = request.form.get('use_mass_format', 'false').lower() == 'true'
 
         # If user does not select file, browser also submits an empty part without filename
         if file.filename == '':
@@ -232,6 +234,13 @@ def extract_benefits():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
+            
+            # If template file was provided, save it
+            template_path = None
+            if template_file and template_file.filename != '':
+                template_filename = secure_filename(template_file.filename)
+                template_path = os.path.join(app.config['UPLOAD_FOLDER'], template_filename)
+                template_file.save(template_path)
 
             # Process the PDF file
             try:
@@ -242,16 +251,26 @@ def extract_benefits():
                 benefit_info = extractor.extract_benefits()
 
                 # Create an Excel file with the extracted data
-                excel_filename = f"benefits_{uuid.uuid4().hex[:8]}.xlsx"
+                if use_mass_format:
+                    # Use a more descriptive filename for mass upload format
+                    excel_filename = f"{os.path.splitext(filename)[0]}_mass_upload_{uuid.uuid4().hex[:8]}.xlsx"
+                else:
+                    excel_filename = f"benefits_{uuid.uuid4().hex[:8]}.xlsx"
+                    
                 excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
                 
                 # Create Excel with benefits data
-                create_benefit_excel({"results": [benefit_info]}, excel_path)
+                if use_mass_format and template_path:
+                    # Copy template first if it exists
+                    shutil.copy2(template_path, excel_path)
+                
+                create_benefit_excel(benefit_info, excel_path)
 
                 return jsonify({
                     "success": True,
                     "result": benefit_info,
-                    "excel_file": excel_filename
+                    "excel_file": excel_filename,
+                    "format": "mass_upload_template" if use_mass_format else "standard"
                 })
                 
             except Exception as e:
@@ -265,9 +284,20 @@ def extract_benefits():
                     benefit_info = simple_extract_benefit_information(text_content)
                     
                     # Create Excel
-                    excel_filename = f"benefits_simple_{uuid.uuid4().hex[:8]}.xlsx"
+                    if use_mass_format:
+                        # Use a more descriptive filename for mass upload format
+                        excel_filename = f"{os.path.splitext(filename)[0]}_mass_upload_simple_{uuid.uuid4().hex[:8]}.xlsx"
+                    else:
+                        excel_filename = f"benefits_simple_{uuid.uuid4().hex[:8]}.xlsx"
+                        
                     excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
-                    create_benefit_excel({"results": [benefit_info]}, excel_path)
+                    
+                    # Create Excel with benefits data
+                    if use_mass_format and template_path:
+                        # Copy template first if it exists
+                        shutil.copy2(template_path, excel_path)
+                    
+                    create_benefit_excel(benefit_info, excel_path)
                     
                     return jsonify({
                         "success": True,
@@ -356,6 +386,180 @@ def analyze_with_perplexity():
     except Exception as e:
         logger.error(f"Perplexity analysis error: {str(e)}")
         return jsonify({"success": False, "error": f"Analysis error: {str(e)}"})
+
+@app.route('/extract-benefits-ai', methods=['POST'])
+def extract_benefits_ai():
+    """
+    Enhanced benefit extraction route that uses Perplexity AI for more accurate extraction
+    following the specific formatting requirements for the mass upload template.
+    """
+    try:
+        # Check if the post request has the file part
+        if 'pdf_file' not in request.files:
+            return jsonify({"success": False, "error": "No file part"})
+
+        file = request.files['pdf_file']
+        template_file = request.files['template_file'] if 'template_file' in request.files else None
+
+        # If user does not select file, browser also submits an empty part without filename
+        if file.filename == '':
+            return jsonify({"success": False, "error": "No selected file"})
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            
+            # If template file was provided, save it
+            template_path = None
+            if template_file and template_file.filename != '':
+                template_filename = secure_filename(template_file.filename)
+                template_path = os.path.join(app.config['UPLOAD_FOLDER'], template_filename)
+                template_file.save(template_path)
+
+            # Process the PDF file
+            processor = PDFProcessor(file_path)
+            text, _ = processor.extract_text()
+            
+            # Get Perplexity API key
+            api_keys = load_api_keys()
+            perplexity_key = api_keys.get('perplexity')
+            
+            if not perplexity_key:
+                return jsonify({"success": False, "error": "No Perplexity API key found in settings"})
+            
+            # Construct a prompt tailored to the mass upload template format
+            prompt = """
+            Extract health insurance benefit information from the following document, 
+            and format it according to these specific rules:
+            
+            1. For non-HSA plans, simple copay amounts should just be the dollar amount (e.g., "$15")
+            2. For HSA plans, add "after deductible" after dollar amounts (e.g., "$15 after deductible")
+            3. For percentage values, always add "after deductible" (e.g., "20% after deductible")
+            4. For services with different costs at different facilities, format as "Freestanding: X / Hospital: Y"
+            5. For per occurrence deductibles, format as "$X, then Y% after deductible"
+            6. For mail order prescriptions with multiple tiers, format as "Tier1 / Tier2 / Tier3" (e.g., "$10 / $20 / $40")
+            7. For preventive services in-network, always use "0%"
+            8. Emergency room out-of-network should match the in-network value
+            9. Hospital newborn delivery should match inpatient hospitalization
+            
+            Provide the following specific data points, following the formatting rules above:
+            
+            - carrier_name: The insurance carrier name (e.g., UnitedHealthcare, Aetna, etc.)
+            - plan_name: The specific plan name mentioned
+            - deductible: 
+                - individual_in_network: The in-network individual deductible amount (number only, e.g., 1500)
+                - family_in_network: The in-network family deductible amount (number only, e.g., 3000)
+                - individual_out_network: The out-of-network individual deductible amount (number only, e.g., 3000)
+                - family_out_network: The out-of-network family deductible amount (number only, e.g., 6000)
+            - coinsurance:
+                - in_network: The in-network coinsurance percentage (number only, e.g., 20)
+                - out_network: The out-of-network coinsurance percentage (number only, e.g., 40)
+            - out_of_pocket:
+                - individual_in_network: The in-network individual OOP max (number only, e.g., 5000)
+                - family_in_network: The in-network family OOP max (number only, e.g., 10000)
+                - individual_out_network: The out-of-network individual OOP max (number only, e.g., 10000)
+                - family_out_network: The out-of-network family OOP max (number only, e.g., 20000)
+            - office_visits:
+                - primary_care: The PCP visit cost (with proper HSA formatting)
+                - specialist: The specialist visit cost (with proper HSA formatting)
+                - urgent_care: The urgent care visit cost (with proper HSA formatting)
+            - emergency_room: The emergency room cost (with proper HSA formatting)
+            - preventive_services: 
+                - in_network: Always "0%"
+                - out_network: The out-of-network preventive services cost
+            - outpatient_surgery: The outpatient surgery cost (noting any facility differences)
+            - hospitalization: The inpatient hospitalization cost
+            - imaging: The CT/MRI/PT scan cost (noting any facility differences)
+            - prescription:
+                - deductible: Rx deductible if separate from medical
+                - tier_1: Generic medication cost
+                - tier_2: Preferred brand medication cost
+                - tier_3: Non-preferred medication cost
+                - tier_4: Specialty medication cost
+                - tier_5: Specialty (level 5) medication cost if available
+                - mail_order: Mail order prescription costs
+            - network_type: Plan network type (PPO, HMO, EPO, POS, etc.)
+            - network_name: Name of the provider network if mentioned
+            - deductible_type: "Embedded" or "Aggregate"
+            - member_website: Website for member access
+            - customer_service: Customer service phone number
+            
+            Return the data as a JSON object.
+            """
+            
+            try:
+                # Use Perplexity API for detailed extraction with specific formatting
+                analysis = analyze_text_with_perplexity(perplexity_key, text, prompt)
+                
+                benefits = {}
+                if analysis and "choices" in analysis and analysis["choices"] and "message" in analysis["choices"][0]:
+                    content = analysis["choices"][0]["message"]["content"]
+                    
+                    # Try to parse the response as JSON
+                    try:
+                        benefits = json.loads(content)
+                    except json.JSONDecodeError:
+                        # If not valid JSON, try to extract structured data from the content
+                        logger.warning("Perplexity response wasn't valid JSON, extracting manually")
+                        # Fallback to extractor
+                        extractor = BenefitExtractor(file_path)
+                        benefits = extractor.extract_benefits()
+                else:
+                    # If analysis doesn't have the expected structure, fallback to extractor
+                    extractor = BenefitExtractor(file_path)
+                    benefits = extractor.extract_benefits()
+                
+                # Create Excel file with the mass upload template format
+                excel_filename = f"{os.path.splitext(filename)[0]}_ai_extraction_{uuid.uuid4().hex[:8]}.xlsx"
+                excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
+                
+                # Use template if provided
+                if template_path:
+                    shutil.copy2(template_path, excel_path)
+                
+                # Create Excel with the special formatting
+                create_benefit_excel(benefits, excel_path)
+                
+                return jsonify({
+                    "success": True,
+                    "result": benefits,
+                    "excel_file": excel_filename,
+                    "format": "mass_upload_template",
+                    "extraction_method": "perplexity_ai"
+                })
+                
+            except Exception as e:
+                logger.error(f"AI extraction error: {str(e)}")
+                # Fall back to regular extraction
+                extractor = BenefitExtractor(file_path)
+                benefits = extractor.extract_benefits()
+                
+                # Create Excel file with the mass upload template format
+                excel_filename = f"{os.path.splitext(filename)[0]}_fallback_{uuid.uuid4().hex[:8]}.xlsx"
+                excel_path = os.path.join(app.config['DOWNLOAD_FOLDER'], excel_filename)
+                
+                # Use template if provided
+                if template_path:
+                    shutil.copy2(template_path, excel_path)
+                
+                # Create Excel with the special formatting
+                create_benefit_excel(benefits, excel_path)
+                
+                return jsonify({
+                    "success": True,
+                    "result": benefits,
+                    "excel_file": excel_filename,
+                    "format": "mass_upload_template",
+                    "extraction_method": "standard_fallback",
+                    "warning": "AI extraction failed, used standard extraction"
+                })
+        
+        return jsonify({"success": False, "error": "Invalid file format"})
+        
+    except Exception as e:
+        logger.error(f"AI benefit extraction error: {str(e)}")
+        return jsonify({"success": False, "error": f"Extraction error: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -54,10 +54,40 @@
                         <small class="text-muted">Maximum file size: 16MB</small>
                     </div>
                     
-                    <div class="text-center mt-4">
-                        <button class="btn btn-primary" id="extractButton" disabled>
-                            <i class="fas fa-search me-2"></i> Extract Benefits
-                        </button>
+                    <div class="mt-4">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="" id="useMassFormatCheck" checked>
+                            <label class="form-check-label" for="useMassFormatCheck">
+                                Use Mass Upload Template Format
+                            </label>
+                            <small class="form-text text-muted d-block mt-1">
+                                Formats the output according to the special requirements for mass upload templates
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="templateFile" class="form-label">Excel Template (Optional)</label>
+                            <input class="form-control" type="file" id="templateFile" accept=".xlsx,.xls">
+                            <small class="form-text text-muted">
+                                Upload an Excel template file to use as a base for the extraction
+                            </small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="" id="useAIFormatCheck" checked>
+                            <label class="form-check-label" for="useAIFormatCheck">
+                                Use AI-Powered Extraction
+                            </label>
+                            <small class="form-text text-muted d-block mt-1">
+                                Uses advanced AI to extract more detailed information (requires Perplexity API key)
+                            </small>
+                        </div>
+                    
+                        <div class="text-center mt-4">
+                            <button class="btn btn-primary" id="extractButton" disabled>
+                                <i class="fas fa-search me-2"></i> Extract Benefits
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
